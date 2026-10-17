@@ -28,9 +28,20 @@ describe('parseHistogram', () => {
     const root = html([5, 4, 3, 2, 1].map((s) => row(`${s} stars, ${s * 1000} reviews`)).join(''));
     expect(parseHistogram(root)).toEqual({ 1: 1000, 2: 2000, 3: 3000, 4: 4000, 5: 5000 });
   });
-  it('ignores unrelated and malformed rows and needs at least three', () => {
-    const root = html(`<div role="img"></div>${row('Photo')}${row('0 stars, 4 reviews')}${row('9 stars, 4 reviews')}${row('5 stars, 4 reviews')}${row('4 stars, 3 reviews')}`);
-    expect(parseHistogram(root)).toBeNull();
+  it('finds the star by position, whatever the word order of the language', () => {
+    const root = html([5, 4, 3, 2, 1].map((s) => row(`${s * 100 + 7} Rezensionen mit ${s} Sternen`)).join(''));
+    expect(parseHistogram(root)).toEqual({ 1: 107, 2: 207, 3: 307, 4: 407, 5: 507 });
+  });
+  it('accepts equal star and count numbers', () => {
+    const root = html([5, 4, 3, 2, 1].map((s) => row(`${s} stars, ${s} reviews`)).join(''));
+    expect(parseHistogram(root)).toEqual({ 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 });
+  });
+  it('skips unrelated rows in front and returns null without a full run', () => {
+    const noise = `<div role="img"></div>${row('Photo')}${row('4.0 stars 500 Reviews')}`;
+    const full = [5, 4, 3, 2, 1].map((s) => row(`${s} stars, ${s * 10} reviews`)).join('');
+    expect(parseHistogram(html(noise + full))[5]).toBe(50);
+    expect(parseHistogram(html(noise + row('5 stars, 4 reviews') + row('4 stars, 3 reviews')))).toBeNull();
+    expect(parseHistogram(html(noise + row('5 stars, 4 reviews') + row('3 stars, 3 reviews') + row('3 stars, 3 reviews') + row('2 stars, 1 review') + row('1 star, 1 review')))).toBeNull();
   });
 });
 

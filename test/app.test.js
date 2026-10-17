@@ -75,6 +75,17 @@ describe('result cards', () => {
     expect(document.querySelector('#item').nextElementSibling.className).toBe('hr-chip');
     expect(document.querySelector('#hidden').querySelector('.hr-chip')).toBeNull();
   });
+  it('moves a floating chip next to the rating chip once the filter bar appears', () => {
+    document.body.innerHTML = `<div role="feed">${card()}</div>`;
+    const app = createApp(document, FAST);
+    app.scan();
+    expect(document.querySelectorAll('.hr-chip--floating')).toHaveLength(1);
+    document.body.insertAdjacentHTML('afterbegin', '<button>Bewertung</button>');
+    app.scan();
+    const chip = document.querySelector('.hr-chip');
+    expect(chip.classList.contains('hr-chip--floating')).toBe(false);
+    expect(document.querySelector('button').nextElementSibling).toBe(chip);
+  });
   it('ignores long button texts that merely mention a rating', () => {
     document.body.innerHTML = `<button>Show everything about the rating of this place</button><div role="feed">${card()}</div>`;
     createApp(document, FAST).scan();

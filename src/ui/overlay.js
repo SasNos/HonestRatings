@@ -6,6 +6,10 @@ export function removeOverlay() {
   document.getElementById(ID)?.remove();
 }
 
+function histogramText(histogram) {
+  return histogram ? [5, 4, 3, 2, 1].map((star) => `${star}:${histogram[star]}`).join(' ') : 'not found';
+}
+
 function paragraph(className, text) {
   const p = document.createElement('p');
   p.className = className;
@@ -65,7 +69,7 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
     for (const review of reviews) panel.append(reviewCard(review));
     if (debug && reviews.length === 0 && !signedOut) {
       const found = (flag) => (flag ? 'found' : 'missing');
-      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements`));
+      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}`));
     }
   }
   document.body.append(panel);

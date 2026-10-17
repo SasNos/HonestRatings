@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { collect, findReviewsTab, waitFor } from '../src/dom/collect.js';
+import { collect, findReviewsTab, findSort, waitFor } from '../src/dom/collect.js';
 
 const FAST = { timeout: 50, interval: 5, settle: 0, restore: 0 };
 
@@ -59,7 +59,29 @@ describe('findReviewsTab', () => {
   });
 });
 
+describe('findSort', () => {
+  it('finds the button by data-value, by label in any language, or not at all', () => {
+    document.body.innerHTML = '<button data-value="Sort"></button>';
+    expect(findSort(document)).not.toBeNull();
+    document.body.innerHTML = '<button aria-label="Rezensionen sortieren"></button>';
+    expect(findSort(document)).not.toBeNull();
+    document.body.innerHTML = '<div role="button">Sortieren</div>';
+    expect(findSort(document)).not.toBeNull();
+    document.body.innerHTML = '<button aria-label="Share"></button>';
+    expect(findSort(document)).toBeNull();
+  });
+});
+
 describe('collect', () => {
+  it('still reads the loaded reviews when there is no sort button', async () => {
+    panel({ sort: false });
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="a"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Meh</span></div>');
+    });
+    const result = await collect(document, FAST);
+    expect(result.reviews.map((r) => r.text)).toEqual(['Meh']);
+    expect(result.debug.sort).toBe(false);
+  });
   it('walks tab, sort and lowest option, then restores the overview', async () => {
     const clicks = panel();
     const result = await collect(document, FAST);
@@ -88,7 +110,8 @@ describe('collect', () => {
     });
     const result = await collect(document, FAST);
     expect(seen).toEqual(['Sort', 'menuitemradio']);
-    expect(result.debug).toEqual({ sort: true, options: 4, reviewElements: 1 });
+    expect(result.debug).toMatchObject({ sort: true, options: 4, reviewElements: 1 });
+    expect(result.debug.histogram[5]).toBe(5);
   });
   it('waits until the list changes after choosing the sort order', async () => {
     panel();

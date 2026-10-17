@@ -52,7 +52,8 @@ export function createApp(doc = document, collectOptions = {}) {
   }
 
   function placeChip() {
-    if (chip.isConnected || !doc.querySelector(SEL.card)) return;
+    const floating = chip.classList.contains('hr-chip--floating');
+    if ((chip.isConnected && !floating) || !doc.querySelector(SEL.card)) return;
     // Maps keeps a hidden duplicate of the chip row, so only a visible button counts.
     const anchor = [...doc.querySelectorAll('button')].find(
       (button) => button.getClientRects().length > 0 && button.textContent.length < 24 && RATING_CHIP.test(button.textContent),
@@ -61,8 +62,9 @@ export function createApp(doc = document, collectOptions = {}) {
       // Insert next to the chip item, not inside the button's own wrapper.
       let item = anchor;
       while (item.parentElement.children.length === 1) item = item.parentElement;
+      chip.classList.remove('hr-chip--floating');
       item.after(chip);
-    } else {
+    } else if (!chip.isConnected) {
       chip.classList.add('hr-chip--floating');
       doc.body.append(chip);
     }

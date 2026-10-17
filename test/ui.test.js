@@ -91,9 +91,10 @@ describe('overlay', () => {
     expect(panel.textContent).toContain('Loading');
   });
   it('explains what it found when no reviews were read, but not when signed out', () => {
-    const debug = { sort: true, options: 4, reviewElements: 0 };
+    const debug = { sort: true, options: 4, reviewElements: 0, histogram: { 5: 9, 4: 8, 3: 7, 2: 6, 1: 5 } };
     expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain('Debug: sort button found, 4 menu items, 0 review elements');
-    expect(showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false } }).textContent).toContain('sort button missing');
+    expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain('histogram 5:9 4:8 3:7 2:6 1:5');
+    expect(showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false, histogram: null } }).textContent).toContain('sort button missing, 4 menu items, 0 review elements, histogram not found');
     expect(showOverlay({ title: 'A', reviews: [], debug, signedOut: true }).textContent).not.toContain('Debug');
     expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }], debug }).textContent).not.toContain('Debug');
   });

@@ -15,19 +15,23 @@ export function parseRatingLabel(label) {
   return { average, total: numbers[1] ? toInt(numbers[1]) : null };
 }
 
-// "5 stars, 1,046 reviews" -> { 5: 1046 }. Rows without a count are skipped.
+// Five consecutive rows labelled like "5 stars, 1,046 reviews" (5 down to 1).
+// The star number is found by position, so the word order of the language
+// ("1.046 Rezensionen mit 5 Sternen") does not matter.
 export function parseHistogram(root) {
-  const histogram = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  let rows = 0;
-  for (const row of root.querySelectorAll(SEL.histogramRow)) {
-    const numbers = row.getAttribute('aria-label').match(NUMBER);
-    if (!numbers || numbers.length < 2) continue;
-    const stars = toInt(numbers[0]);
-    if (stars < 1 || stars > 5) continue;
-    histogram[stars] = toInt(numbers[1]);
-    rows += 1;
+  const rows = [...root.querySelectorAll(SEL.histogramRow)]
+    .map((row) => (row.getAttribute('aria-label').match(NUMBER) || []).slice(0, 2).map(toInt))
+    .filter((numbers) => numbers.length === 2);
+  for (let start = 0; start + 5 <= rows.length; start += 1) {
+    const counts = rows.slice(start, start + 5).map((numbers, k) => {
+      const at = numbers.indexOf(5 - k);
+      return at === -1 ? null : numbers[1 - at];
+    });
+    if (counts.every((count) => count !== null)) {
+      return { 5: counts[0], 4: counts[1], 3: counts[2], 2: counts[3], 1: counts[4] };
+    }
   }
-  return rows >= 3 ? histogram : null;
+  return null;
 }
 
 // Fallback when Maps renames the text class: the longest plain text outside buttons.

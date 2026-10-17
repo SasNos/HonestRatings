@@ -1,5 +1,11 @@
 # Status
 
+## First signed-in test (German Maps), 17 October 2026
+
+The debug line showed "sort button missing, 0 menu items, 26 review elements": the reviews are on the page, only the sort button was not found. Also "10 of 25 reviews" for a place with 659 reviews: the histogram parser assumed the order "5 stars, N reviews". And the chip stayed floating because the first scan ran before the filter bar existed.
+
+Fixes: the sort button is also found by label (sort, sortieren, trier ...), and when no sorting is possible the worst of the loaded reviews is used; the histogram is read by position (five consecutive rows, 5 down to 1) so the word order does not matter; a floating chip moves to the rating chip as soon as it exists. The real German labels are still unknown; the debug line now also prints the histogram it read.
+
 ## Stuck stars and "no bad reviews", 17 October 2026
 
 User test: stars sometimes jumped to 5 after the map moved, and the overlay always said there were no bad reviews with text.

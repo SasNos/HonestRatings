@@ -1,4 +1,4 @@
-import { SEL, SORT_LOWEST_INDEX, REVIEWS_TAB } from './selectors.js';
+import { SEL, SORT_LOWEST_INDEX, SORT_LABEL, REVIEWS_TAB } from './selectors.js';
 import { parseHistogram, worstReviews } from './parse.js';
 
 export function waitFor(check, { timeout = 4000, interval = 100 } = {}) {
@@ -17,6 +17,12 @@ export function waitFor(check, { timeout = 4000, interval = 100 } = {}) {
 export function findReviewsTab(doc) {
   const tabs = [...doc.querySelectorAll(SEL.tab)];
   return tabs.find((tab) => REVIEWS_TAB.test((tab.getAttribute('aria-label') || tab.textContent).trim())) || null;
+}
+
+export function findSort(doc) {
+  const known = doc.querySelector(SEL.sortButton);
+  if (known) return known;
+  return [...doc.querySelectorAll(SEL.sortCandidate)].find((el) => SORT_LABEL.test(el.getAttribute('aria-label') || el.textContent.slice(0, 40))) || null;
 }
 
 // Maps menus listen for the whole pointer sequence, not only for click().
@@ -44,9 +50,9 @@ export async function collect(doc, options = {}) {
   const scrollTop = box?.scrollTop;
   reviewsTab.click();
   const histogram = await waitFor(() => parseHistogram(doc), options);
-  const sort = await waitFor(() => doc.querySelector(SEL.sortButton), options);
+  const sort = await waitFor(() => findSort(doc), { ...options, timeout: Math.min(options.timeout ?? 4000, 2000) });
   const signedOut = Boolean(doc.querySelector(SEL.signIn));
-  const debug = { sort: Boolean(sort), options: 0, reviewElements: 0 };
+  const debug = { sort: Boolean(sort), options: 0, reviewElements: 0, histogram };
   let reviews = [];
   // Sorting needs a Google login; signed out, Maps would only show a sign-in dialog.
   if (sort && !signedOut) {
@@ -65,6 +71,11 @@ export async function collect(doc, options = {}) {
       await new Promise((resolve) => setTimeout(resolve, options.settle ?? 600));
       reviews = worstReviews(doc);
     }
+  }
+  if (reviews.length === 0) {
+    // No sorting possible: the worst of the reviews Maps loaded is still useful.
+    await waitFor(() => doc.querySelector(SEL.review), options);
+    reviews = worstReviews(doc);
   }
   if (previous && previous !== reviewsTab) previous.click();
   if (box) {
