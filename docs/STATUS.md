@@ -1,5 +1,9 @@
 # Status
 
+## Menu rows vanished, list stays Maps until filtered, 17 October 2026
+
+After picking a negative star row the "Negative" section was gone when the menu was opened again: Maps keeps the `role=menu` element and rebuilds the rows inside it, but the menu was flagged as done. The section is now looked up by its class and added again whenever it is missing. The result list shows the original Google Maps ratings until a negative filter below 5 is picked; only then (`data-hr-negative` on the html element) the purple negative badges replace them, so both the Maps rating filter and the negative filter can be used. The place overlay is unchanged. Not re-checked live (needs a full extension run).
+
 ## Negative filter inside the Rating dropdown, 17 October 2026
 
 The own "Negative" chip is gone (no more layout jumps, and the earlier chip alignment and menu clipping work is obsolete). When Maps builds its rating menu (`div[role=menu]` whose `menuitemradio` rows carry star labels; it is rebuilt on every open), `src/ui/ratingMenu.js` appends a "Negative" section with five rows of purple stars: same 32px rows and 16px padding, a divider and a small heading. The pick filters the result list and closes the menu by dispatching Escape on it (clicking the chip again did not close it). The menu is enhanced from the MutationObserver without the 200 ms debounce so it does not visibly grow. Checked live (signed out, English): section renders natively, a click is picked, Escape closes the menu; the list filtering itself is covered by the tests only. There is no marker on the chip showing that a negative filter is active.

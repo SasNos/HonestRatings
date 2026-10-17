@@ -3,7 +3,7 @@ import { parseHistogram, parseRatingLabel } from './dom/parse.js';
 import { collect } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { renderBadge, BADGE_ATTR } from './ui/badge.js';
-import { enhanceRatingMenu, MENU_ATTR } from './ui/ratingMenu.js';
+import { enhanceRatingMenu, SECTION_CLASS } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
@@ -25,6 +25,8 @@ export function createApp(doc = document, collectOptions = {}) {
   const cache = new Map();
 
   function decorateCards() {
+    // The list stays the original Maps one until a negative filter is chosen.
+    doc.documentElement.toggleAttribute('data-hr-negative', maxStars < 5);
     for (const card of doc.querySelectorAll(SEL.card)) {
       const found = ratingOf(card);
       const label = found?.image.getAttribute('aria-label');
@@ -59,8 +61,8 @@ export function createApp(doc = document, collectOptions = {}) {
     for (const menu of doc.querySelectorAll(SEL.menu)) {
       const items = [...menu.querySelectorAll(SEL.sortOption)];
       const starred = items.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label')));
-      if (menu.hasAttribute(MENU_ATTR) || !starred) continue;
-      menu.setAttribute(MENU_ATTR, '');
+      // Maps keeps the menu element and rebuilds its rows, so look for our section, not a flag.
+      if (!starred || menu.querySelector(`.${SECTION_CLASS}`)) continue;
       enhanceRatingMenu(starred.parentElement, maxStars, (max) => pick(max, menu));
     }
   }

@@ -1,6 +1,6 @@
 import { renderStars } from './stars.js';
 
-export const MENU_ATTR = 'data-hr-menu';
+export const SECTION_CLASS = 'hr-menu-section';
 
 function row(max, current, onPick) {
   const item = document.createElement('div');
@@ -25,7 +25,7 @@ function row(max, current, onPick) {
 // place may have (5 = any).
 export function enhanceRatingMenu(list, current, onPick) {
   const section = document.createElement('div');
-  section.className = 'hr-menu-section';
+  section.className = SECTION_CLASS;
   const heading = document.createElement('div');
   heading.className = 'hr-menu-heading';
   heading.textContent = 'Negative';

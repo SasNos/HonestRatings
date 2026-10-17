@@ -26,10 +26,11 @@
 .hr-star { width: 16px; height: 16px; fill: var(--hr-purple); }
 .hr-star--empty { fill: var(--hr-outline); }
 
-.hr-badge { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/16px var(--hr-font); color: var(--hr-on-surface-variant); }
+.hr-badge { display: none; align-items: center; gap: 4px; font: 400 12px/16px var(--hr-font); color: var(--hr-on-surface-variant); }
 .hr-badge__count { color: var(--hr-purple); font-weight: 500; }
 .hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
-[data-hr-hidden], [data-hr-filtered] { display: none !important; }
+[data-hr-filtered], [data-hr-negative] [data-hr-hidden] { display: none !important; }
+[data-hr-negative] .hr-badge { display: inline-flex; }
 
 /* "Negative" section inside the original Maps rating menu (same 32px rows, 16px padding). */
 .hr-menu-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hr-outline); }

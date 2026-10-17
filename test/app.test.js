@@ -108,6 +108,27 @@ describe('rating menu', () => {
     rows[4].click();
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
   });
+  it('shows the negative view only while a negative filter is active', () => {
+    page();
+    const app = createApp(document, FAST);
+    app.scan();
+    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
+    document.querySelectorAll('.hr-menu-item')[1].click();
+    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(true);
+    document.querySelectorAll('.hr-menu-item')[4].click();
+    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
+  });
+  it('adds the section again when Maps rebuilds the rows inside the same menu element', () => {
+    page();
+    const app = createApp(document, FAST);
+    app.scan();
+    document.querySelectorAll('.hr-menu-item')[2].click();
+    document.getElementById('list').innerHTML = '<div role="menuitemradio"><span aria-label="2.0 stars"></span></div>';
+    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(0);
+    app.enhanceMenus();
+    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
+    expect(document.querySelectorAll('.hr-menu-item')[2].getAttribute('aria-checked')).toBe('true');
+  });
   it('remembers the pick for the next time Maps builds the menu', () => {
     page();
     const app = createApp(document, FAST);
