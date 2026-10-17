@@ -36,20 +36,36 @@ function summaryRow(summary) {
   return row;
 }
 
-function reviewCard(review) {
+// A click (or Enter) on a review shows it in the Google Maps panel.
+function reviewCard(review, onReview) {
   const card = document.createElement('article');
   card.className = 'hr-review';
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.title = 'Show this review in Google Maps';
   const meta = document.createElement('div');
   meta.className = 'hr-review__meta';
   const author = document.createElement('span');
   author.textContent = review.author || 'Anonymous';
   meta.append(author, renderStars(review.stars));
-  card.append(meta, paragraph('hr-review__text', review.text));
+  const text = paragraph('hr-review__text', review.text || 'No text');
+  if (!review.text) text.classList.add('hr-review__text--empty');
+  card.append(meta, text);
+  card.addEventListener('click', () => onReview(review));
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onReview(review);
+    }
+  });
   return card;
 }
 
-// Top-right panel with the worst reviews of the open place.
-export function showOverlay({ title, summary, reviews, loading = false, signedOut = false, debug = null }) {
+// Panel on the right of the map with the negative reviews of the open place.
+// While reviews are still loading it can be shown again with what is there so far.
+export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, onReview = () => {} }) {
+  const previous = document.getElementById(ID);
+  const scrollTop = previous ? previous.scrollTop : 0;
   removeOverlay();
   const panel = document.createElement('aside');
   panel.id = ID;
@@ -70,18 +86,16 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
   panel.append(header, paragraph('hr-overlay__place', title));
 
   if (summary) panel.append(summaryRow(summary));
-  if (loading) {
-    panel.append(paragraph('hr-overlay__note', 'Loading the worst reviews…'));
-  } else {
-    if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the worst reviews.'));
-    else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No bad reviews with text found.'));
-    if (reviews.length > 0) panel.append(paragraph('hr-overlay__note', `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars) with text`));
-    for (const review of reviews) panel.append(reviewCard(review));
-    if (debug && reviews.length === 0 && !signedOut) {
-      const found = (flag) => (flag ? 'found' : 'missing');
-      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`));
-    }
+  if (loading) panel.append(paragraph('hr-overlay__note', 'Loading the negative reviews…'));
+  else if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the negative reviews.'));
+  else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No negative reviews found.'));
+  if (reviews.length > 0) panel.append(paragraph('hr-overlay__note', `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
+  for (const review of reviews) panel.append(reviewCard(review, onReview));
+  if (!loading && debug && reviews.length === 0 && !signedOut) {
+    const found = (flag) => (flag ? 'found' : 'missing');
+    panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`));
   }
   document.body.append(panel);
+  panel.scrollTop = scrollTop;
   return panel;
 }

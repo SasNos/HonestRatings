@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { collect, findReviewsTab, findSort, waitFor } from '../src/dom/collect.js';
+import { collect, findReviewsTab, findSort, revealReview, waitFor } from '../src/dom/collect.js';
 
 const FAST = { timeout: 50, interval: 5, settle: 0, restore: 0 };
 
@@ -114,8 +114,8 @@ describe('loading more reviews', () => {
   it('gives up after the maximum number of loads', async () => {
     const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)));
     const result = await collect(document, FAST);
-    expect(state.loads).toBe(8);
-    expect(result.reviews).toHaveLength(9);
+    expect(state.loads).toBe(30);
+    expect(result.reviews).toHaveLength(31);
   });
   it('scrolls once and gives up when no review element is on the page at all', async () => {
     const state = scrollingPanel(() => {});
@@ -129,6 +129,70 @@ describe('loading more reviews', () => {
     panel();
     const result = await collect(document, FAST);
     expect(result.reviews.map((r) => r.text)).toEqual(['Bad']);
+  });
+});
+
+describe('collect progress', () => {
+  it('reports the negative reviews found so far', async () => {
+    panel();
+    const seen = [];
+    await collect(document, FAST, (reviews) => seen.push(reviews.map((r) => r.text)));
+    expect(seen.at(0)).toEqual(['Bad']);
+  });
+});
+
+describe('revealReview', () => {
+  beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  });
+  afterEach(() => {
+    delete window.HTMLElement.prototype.scrollIntoView;
+    delete document.body.scrollHeight;
+    delete document.body.clientHeight;
+    delete document.body.scrollTop;
+  });
+
+  it('opens the reviews tab, sorts, scrolls the review into view and flashes it', async () => {
+    panel();
+    expect(await revealReview(document, 'r', FAST)).toBe(true);
+    const element = document.querySelector('[data-review-id="r"]');
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    expect(element.classList.contains('hr-flash')).toBe(true);
+    await vi.waitFor(() => expect(element.classList.contains('hr-flash')).toBe(false), { timeout: 4000 });
+  });
+  it('flashes a review that is already on the page without touching the tabs', async () => {
+    const clicks = panel();
+    document.getElementById('area').innerHTML = '<div data-review-id="here"><span role="img" aria-label="1 star"></span></div>';
+    expect(await revealReview(document, 'here', FAST)).toBe(true);
+    expect(clicks).toEqual([]);
+  });
+  it('gives up without a reviews tab, for an unknown review, and signed out', async () => {
+    panel({ withTabs: false });
+    expect(await revealReview(document, 'r', FAST)).toBe(false);
+    panel();
+    expect(await revealReview(document, 'unknown', FAST)).toBe(false);
+    panel();
+    document.body.insertAdjacentHTML('beforeend', '<a href="https://accounts.google.com/ServiceLogin">Sign in</a>');
+    expect(await revealReview(document, 'r', FAST)).toBe(false);
+  });
+  it('uses default options and scrolls to load the review when it is not there yet', async () => {
+    panel();
+    Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+    Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+    let loads = 0;
+    Object.defineProperty(document.body, 'scrollTop', {
+      configurable: true,
+      get: () => 0,
+      set(value) {
+        if (value > 0) {
+          loads += 1;
+          if (loads === 2) document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="late"><span role="img" aria-label="2 stars"></span></div>');
+          else document.getElementById('area').insertAdjacentHTML('beforeend', `<div data-review-id="filler${loads}"><span role="img" aria-label="1 star"></span></div>`);
+        }
+      },
+    });
+    expect(await revealReview(document, 'late')).toBe(true);
+    expect(loads).toBe(2);
   });
 });
 

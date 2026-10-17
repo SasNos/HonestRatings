@@ -1,6 +1,6 @@
 import { SEL } from './dom/selectors.js';
 import { parseHistogram, parseRatingLabel } from './dom/parse.js';
-import { collect, waitFor } from './dom/collect.js';
+import { collect, revealReview, waitFor } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
@@ -38,6 +38,9 @@ export function createApp(doc = document, collectOptions = {}) {
     return titles.at(-1)?.textContent.trim() || null;
   }
 
+  // A click on a review shows it in the Google Maps panel.
+  const onReview = (review) => revealReview(doc, review.id, collectOptions);
+
   function summaryOf(histogram) {
     const panel = ratingOf(doc.querySelector('[role="main"]') || doc);
     return summarize({ histogram, average: panel?.rating.average, total: panel?.rating.total });
@@ -47,8 +50,8 @@ export function createApp(doc = document, collectOptions = {}) {
     const mine = ++run;
     const urlTitle = safeDecode(key).replace(/\+/g, ' ');
     const cached = cache.get(key);
-    if (cached) return showOverlay({ title: panelTitle() || urlTitle, ...cached });
-    showOverlay({ title: urlTitle, loading: true });
+    if (cached) return showOverlay({ title: panelTitle() || urlTitle, ...cached, onReview });
+    showOverlay({ title: urlTitle, loading: true, onReview });
     // The URL changes before the panel does: wait until the panel shows this place, or give
     // up after a moment, so no numbers of the previous place are read.
     const wanted = slug(urlTitle);
@@ -63,12 +66,16 @@ export function createApp(doc = document, collectOptions = {}) {
     if (mine !== run) return;
     title = title || panelTitle() || urlTitle;
     // The overview already lists the star histogram, so the numbers show at once.
-    showOverlay({ title, summary: summaryOf(parseHistogram(doc)), loading: true });
+    const first = summaryOf(parseHistogram(doc));
+    showOverlay({ title, summary: first, loading: true, onReview });
     // Hide the panel while the collector switches tabs, so it does not flicker.
     doc.documentElement.classList.add('hr-collecting');
     let data;
     try {
-      data = await collect(doc, collectOptions);
+      // Show the reviews as they load, so the worst are in view at once.
+      data = await collect(doc, collectOptions, (reviews) => {
+        if (mine === run) showOverlay({ title, summary: first, reviews, loading: true, onReview });
+      });
     } finally {
       doc.documentElement.classList.remove('hr-collecting');
     }
@@ -76,7 +83,7 @@ export function createApp(doc = document, collectOptions = {}) {
     const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut, debug: data?.debug };
     // An empty result is not cached: it may just be a slow load, and a revisit should retry.
     if (result.reviews.length > 0) cache.set(key, result);
-    showOverlay({ title, ...result });
+    showOverlay({ title, ...result, onReview });
   }
 
   // The place comes from the URL: the title and the panel change while the

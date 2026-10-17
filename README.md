@@ -9,7 +9,10 @@ Maps itself stays untouched: no changed dropdown, no changed result list. The ex
 - negative stars (1-5 purple stars, fewer is better),
 - the share of bad reviews with the count, for example `20% (200 / 1,000)` (a `~` marks an estimate, see below),
 - Google's own rating,
-- **all negative reviews** (1-2 stars) that contain text, **worst first**, in a scrollable list. The extension scrolls the review list to load more until it passes the 2-star reviews (at most eight loads).
+- **all reviews with 1-2 stars**, with or without text, **1 star first, then 2 stars**, in a scrollable list. They appear while they load (the extension scrolls the review list, at most 30 loads), so the worst are in view at once.
+- **A click on a review** (or Enter) shows it in the Google Maps panel: the extension opens the reviews tab, sorts by lowest rating, scrolls until the review is loaded, scrolls it to the middle and flashes it.
+
+The overlay sits right of the map and leaves the Maps controls free: below the account and filter rows, left of the zoom, location and street view buttons, above the attribution.
 
 ## How negative stars are calculated
 
@@ -38,7 +41,7 @@ Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" a
 - The negative reviews need a Google login: Maps only lets signed-in users sort reviews. Signed out, the overlay shows the share and count of bad reviews (if the histogram loads) and a sign-in hint.
 - The extension reads the Maps page; it has no API key and sends nothing anywhere. When Google changes the markup, selectors break. All of them live in [src/dom/selectors.js](src/dom/selectors.js).
 - To read the reviews, the extension briefly switches the place panel to the Reviews tab, sorts by "Lowest rating" and switches back.
-- Maps loads reviews in pages; the overlay lists the negative ones it could load (up to eight scroll loads after sorting by lowest rating).
+- Maps loads reviews in pages; the overlay lists the negative ones it could load (up to 30 scroll loads after sorting by lowest rating). A place with more negative reviews than that is listed partly.
 - The sort menu is found by position (fourth entry) so it works in every Maps language; tab and sort labels are matched in English, German, French, Spanish, Italian, Dutch, Portuguese, Japanese and Chinese.
 
 ## Development

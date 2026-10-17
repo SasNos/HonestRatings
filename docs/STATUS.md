@@ -1,5 +1,13 @@
 # Status
 
+## Click to the review, free map controls, all 1-2 star reviews, 17 October 2026
+
+- Every 1-2 star review is listed, also without text (shown as "No text"), 1 star first, then 2 stars (stable sort, Maps' order inside a rating). `negativeReviews()` no longer requires text.
+- The reviews appear while they load: `collect(doc, options, onProgress)` reports the list after the first read and after each scroll load (at most 30); the overlay is redrawn each time and keeps its scroll position.
+- A click on a review card (or Enter or Space) calls `revealReview()` in `src/dom/collect.js`: open the reviews tab, sort by lowest rating (not signed out), scroll until the `data-review-id` element exists (at most 30 loads), `scrollIntoView` to the centre, class `hr-flash` for 2.5 s. The collector and this function share `sortLowest` and `scrollUntil`.
+- Overlay position: `top: 72px; right: 80px; max-height: calc(100vh - 112px)` and a width of at most 360px that shrinks with narrow windows, so it stays below the account and filter rows, left of the zoom, location and street view column and above the attribution. Measured only from Maps' known layout, not checked on a live page with a place open.
+- Not verified live (needs a signed-in Maps session): the reveal click, loading by scrolling, the flash.
+
 ## Back to an overlay only, 17 October 2026
 
 New approach from the user: no dropdown, no change in the results, only the overlay at the top right so that negative reviews are in view at once, sorted worst first. Removed: the "Negative" section in the Rating dropdown (`ratingMenu.js`), the purple badges in the result list (`badge.js`), hiding of places, worst-first ordering of the list, loading more results, the mirrored/Any-rating clicks, and the CSS and selectors for them. Kept: place tracking by URL, waiting for the panel, the collector with sorting and loading of all negative reviews, the overlay (stars, share and counts `20% (200 / 1,000)`, Google rating, scrollable list of every 1-2 star review with text, worst first), the debug line. `src/app.js` is now just `scan()` (URL change opens the overlay) and `start()` (MutationObserver). 69 tests, 100 % coverage. The entries below describe the removed result-list work and are history only.

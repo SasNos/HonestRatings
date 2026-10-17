@@ -60,7 +60,7 @@ export function parseReview(element) {
   const stars = starsOf(element);
   const text = element.querySelector(SEL.reviewText)?.textContent.trim() || longestText(element);
   const author = element.querySelector(SEL.reviewAuthor)?.textContent.trim() || '';
-  return { author, stars, text };
+  return { id: element.getAttribute('data-review-id'), author, stars, text };
 }
 
 // Maps puts data-review-id on the review and on an element inside it: take the
@@ -76,10 +76,11 @@ export function reviewElements(root) {
   });
 }
 
-// Every negative review (1-2 stars) that contains text, worst first.
+// Every negative review (1-2 stars), with or without text: 1 star first, then 2
+// stars, each in the order Maps lists them.
 export function negativeReviews(root) {
   return reviewElements(root)
     .map(parseReview)
-    .filter((review) => review.text && review.stars !== null && review.stars <= BAD_MAX_STARS)
+    .filter((review) => review.stars !== null && review.stars <= BAD_MAX_STARS)
     .sort((a, b) => a.stars - b.stars);
 }

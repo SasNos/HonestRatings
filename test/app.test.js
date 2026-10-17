@@ -105,6 +105,23 @@ describe('place overlay', () => {
     createApp(document).scan();
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'), { timeout: 6000 });
   });
+  it('shows the reviews while they load and shows one in Google Maps on click', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    const scrollIntoView = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const snapshots = [];
+    const observer = new MutationObserver(() => snapshots.push(document.getElementById('hr-overlay')?.textContent ?? ''));
+    observer.observe(document.body, { childList: true, subtree: true });
+    createApp(document, FAST).scan();
+    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'));
+    observer.disconnect();
+    expect(snapshots.some((text) => text.includes('Loading the negative reviews') && text.includes('Bad'))).toBe(true);
+    document.querySelector('.hr-review').click();
+    await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect(document.querySelector('[data-review-id="r"]').classList.contains('hr-flash')).toBe(true);
+    delete window.HTMLElement.prototype.scrollIntoView;
+  });
   it('drops a run that became stale while the reviews were collected', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
@@ -146,13 +163,13 @@ describe('place overlay', () => {
     document.body.innerHTML = '<div role="main"></div>';
     app.scan();
     expect(overlayText()).toContain('Other Place Two');
-    await vi.waitFor(() => expect(overlayText()).toContain('No bad reviews'));
+    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'));
   });
   it('works without a main region, a rating or a reviews tab', async () => {
     go('/maps/place/Lonely/@1,2,3z');
     document.body.innerHTML = '<h1>Lonely</h1>';
     createApp(document, FAST).scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('No bad reviews'));
+    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'));
   });
 });
 

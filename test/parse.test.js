@@ -55,10 +55,10 @@ describe('reviews', () => {
     `<div data-review-id="r${(next += 1)}"><div class="d4r55">${author}</div><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
   it('parses author, stars and text', () => {
     const element = html(review(1, ' Awful ')).firstChild;
-    expect(parseReview(element)).toEqual({ author: 'Ann', stars: 1, text: 'Awful' });
+    expect(parseReview(element)).toEqual({ id: expect.stringMatching(/^r\d+$/), author: 'Ann', stars: 1, text: 'Awful' });
   });
   it('tolerates missing parts', () => {
-    expect(parseReview(html('<div></div>').firstChild)).toEqual({ author: '', stars: null, text: '' });
+    expect(parseReview(html('<div></div>').firstChild)).toEqual({ id: null, author: '', stars: null, text: '' });
     expect(parseReview(html('<div><span role="img" aria-label="stars"></span></div>').firstChild).stars).toBeNull();
     expect(parseReview(html('<div><span role="img" aria-label=""></span></div>').firstChild).stars).toBeNull();
   });
@@ -86,8 +86,9 @@ describe('reviews', () => {
     expect(reviewElements(root)).toHaveLength(2);
     expect(negativeReviews(root).map((r) => r.text)).toEqual(['Awful', 'Bad']);
   });
-  it('lists every negative review with text, worst first, and nothing above 2 stars', () => {
+  it('lists every negative review, with or without text, 1 star first, and nothing above 2 stars', () => {
     const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + review(5, 'e') + '<div data-review-id="y"></div>');
-    expect(negativeReviews(root).map((r) => r.text)).toEqual(['a', 'd', 'b']);
+    expect(negativeReviews(root).map((r) => r.text)).toEqual(['', 'a', 'd', 'b']);
+    expect(negativeReviews(root).map((r) => r.stars)).toEqual([1, 1, 1, 2]);
   });
 });
