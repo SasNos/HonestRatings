@@ -62,8 +62,21 @@ export function parseReview(element) {
 
 // The worst reviews that actually contain text, in the order Maps lists them
 // (the list is sorted by lowest rating before this is called).
+// Maps puts data-review-id on the review and on an element inside it: take the
+// outermost element of each id once.
+export function reviewElements(root) {
+  const seen = new Set();
+  return [...root.querySelectorAll(SEL.review)].filter((element) => {
+    if (element.parentElement.closest(SEL.review)) return false;
+    const id = element.getAttribute('data-review-id');
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 export function worstReviews(root, limit = 3) {
-  return [...root.querySelectorAll(SEL.review)]
+  return reviewElements(root)
     .map(parseReview)
     .filter((review) => review.text && review.stars !== null)
     .sort((a, b) => a.stars - b.stars)

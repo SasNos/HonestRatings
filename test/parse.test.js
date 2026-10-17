@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseHistogram, parseRatingLabel, parseReview, worstReviews } from '../src/dom/parse.js';
+import { parseHistogram, parseRatingLabel, parseReview, reviewElements, worstReviews } from '../src/dom/parse.js';
 
 function html(markup) {
   const root = document.createElement('div');
@@ -46,8 +46,9 @@ describe('parseHistogram', () => {
 });
 
 describe('reviews', () => {
+  let next = 0;
   const review = (stars, text, author = 'Ann') =>
-    `<div data-review-id="x"><div class="d4r55">${author}</div><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
+    `<div data-review-id="r${(next += 1)}"><div class="d4r55">${author}</div><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
   it('parses author, stars and text', () => {
     const element = html(review(1, ' Awful ')).firstChild;
     expect(parseReview(element)).toEqual({ author: 'Ann', stars: 1, text: 'Awful' });
@@ -72,6 +73,14 @@ describe('reviews', () => {
     const element = html('<div><button>A very long button label that must not count</button><span>short</span><span>The staff ignored us for an hour.</span><div>Shorter sentence here.</div></div>').firstChild;
     expect(parseReview(element).text).toBe('The staff ignored us for an hour.');
     expect(parseReview(html('<div><span>short</span></div>').firstChild).text).toBe('');
+  });
+  it('counts a review once although Maps repeats its id on an inner element and on siblings', () => {
+    const nested = '<div data-review-id="a"><div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div></div>';
+    const sibling = '<div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div>';
+    const other = '<div data-review-id="b"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Bad</span></div>';
+    const root = html(nested + sibling + other);
+    expect(reviewElements(root)).toHaveLength(2);
+    expect(worstReviews(root).map((r) => r.text)).toEqual(['Awful', 'Bad']);
   });
   it('picks the worst reviews that have text', () => {
     const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + '<div data-review-id="y"></div>');

@@ -1,5 +1,5 @@
 import { SEL, SORT_LOWEST_INDEX, SORT_LABEL, REVIEWS_TAB } from './selectors.js';
-import { parseHistogram, parseReview, worstReviews } from './parse.js';
+import { parseHistogram, parseReview, reviewElements, worstReviews } from './parse.js';
 
 export function waitFor(check, { timeout = 4000, interval = 100 } = {}) {
   return new Promise((resolve) => {
@@ -83,7 +83,7 @@ export async function collect(doc, options = {}) {
     await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
     box.scrollTop = scrollTop;
   }
-  const parsed = [...doc.querySelectorAll(SEL.review)].map(parseReview);
+  const parsed = reviewElements(doc).map(parseReview);
   debug.reviewElements = parsed.length;
   debug.withStars = parsed.filter((review) => review.stars !== null).length;
   debug.withText = parsed.filter((review) => review.text).length;

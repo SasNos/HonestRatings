@@ -1,5 +1,9 @@
 # Status
 
+## Duplicate review in the overlay, 17 October 2026
+
+Maps sets `data-review-id` on the review and again on an element inside it, so the first (lowest) review showed twice. `reviewElements()` in `src/dom/parse.js` now takes the outermost element of each id once; the debug counts use the same function. Fixed from the user's report, not re-checked on the live page (needs a signed-in session).
+
 ## "No bad reviews with text" again, 17 October 2026
 
 Reported after the dropdown fix; the debug line was not available, so the cause is not confirmed. Two likely causes fixed: an empty result was cached for the place (one slow load then stuck until reload), and the star rating of a review was read from the first image in the review (an avatar or badge could come first, so the review was dropped). Stars are now taken from the first image whose label looks like a rating ("1 star", "Mit 2 von 5 Sternen bewertet"). The debug line also prints how many review elements have stars and text. If it still fails, that line says where.
