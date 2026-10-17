@@ -1,5 +1,12 @@
 # Status
 
+## "Load more" button and sturdier scrolling, 17 October 2026
+
+The patience fix of the entry below did not bring the 2-star reviews in the user's test ("nope", with the suggestion of a load-more button). Two changes, both untested against a live signed-in page:
+
+- `scrollUntil` now scrolls the last loaded review into view (`scrollIntoView({block:'end'})`) in addition to the guessed container, because the container found from the tab may not be the one that scrolls.
+- "Load more (X of Y)" at the end of the overlay, shown when the exact histogram knows more 1-2 star reviews (Y) than are loaded (X) and not while loading or signed out. It calls `loadMoreReviews()` in `src/dom/collect.js`: open the reviews tab again (Maps starts from page 1), sort by lowest rating, scroll until at least 20 more than shown are loaded, a review above 2 stars appears, or 60 loads are done, then restore the tab and scroll position. The overlay keeps its list while loading and replaces it only when the new list is longer. If it still stops short, the "X of Y" line shows how far it got.
+
 ## 2-star reviews missing, scrollbar, 17 October 2026
 
 User screenshot (signed in, German, place with 1,440 reviews): the overlay ended with 1-star reviews and no 2-star ones although they exist. Most likely cause (not reproducible without a login): `scrollUntil` ended after the first scroll that brought no new review within 1.5 s, but Maps needs a few seconds per page, so the loading stopped inside the 1-star block. Changes: a load now waits up to 4 s; only two misses in a row end the loop (the second try scrolls up a little first); the loop also stops as soon as the number of loaded 1-2 star reviews reaches the histogram's count of 1 and 2 stars; the overlay line reads "N of M negative reviews (1-2 stars)" when the exact histogram is known, so a partial list is visible as such. Not verified on a live signed-in page.

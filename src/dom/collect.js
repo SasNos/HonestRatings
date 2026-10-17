@@ -5,6 +5,7 @@ import { BAD_MAX_STARS } from '../scoring.js';
 // Popular places have hundreds of negative reviews: allow many scroll loads.
 const MAX_REVIEW_LOADS = 30;
 const MAX_REVEAL_LOADS = 30;
+const MAX_MORE_LOADS = 60;
 
 export function waitFor(check, { timeout = 4000, interval = 100 } = {}) {
   return new Promise((resolve) => {
@@ -72,7 +73,11 @@ async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {
   let misses = 0;
   for (let tries = 0; box && tries < maxLoads; tries += 1) {
     if (done()) break;
-    const before = reviewElements(doc).length;
+    const elements = reviewElements(doc);
+    const before = elements.length;
+    // Scrolling the last review into view moves whichever container really scrolls, which
+    // a guessed container may not be; the container is scrolled as well.
+    elements.at(-1)?.scrollIntoView?.({ block: 'end' });
     box.scrollTop = box.scrollHeight;
     await waitFor(() => reviewElements(doc).length > before, { ...options, timeout: Math.min(options.timeout ?? 4000, 4000) });
     if (reviewElements(doc).length === before) {
@@ -131,6 +136,34 @@ export async function collect(doc, options = {}, onProgress = () => {}) {
     box.scrollTop = scrollTop;
   }
   return { histogram, reviews, signedOut, debug };
+}
+
+// Loads more negative reviews on request ("Load more"): opens the reviews tab again
+// (Maps starts the list from the beginning), sorts by lowest rating and scrolls until
+// `wanted` negative reviews are loaded, a review above the bad ones shows up, or the
+// limit is hit. Then the previous tab is restored. Returns the negative reviews.
+export async function loadMoreReviews(doc, options, wanted, onProgress = () => {}) {
+  const reviewsTab = findReviewsTab(doc);
+  if (!reviewsTab) return [];
+  const previous = [...doc.querySelectorAll(SEL.tab)].find((tab) => tab.getAttribute('aria-selected') === 'true');
+  const box = scroller(reviewsTab);
+  const scrollTop = box?.scrollTop;
+  reviewsTab.click();
+  const sort = await waitFor(() => findSort(doc), { ...options, timeout: Math.min(options.timeout ?? 4000, 2000) });
+  if (sort && !doc.querySelector(SEL.signIn)) await sortLowest(doc, sort, options);
+  await waitFor(() => doc.querySelector(SEL.review), options);
+  await scrollUntil(doc, box, options, {
+    done: () => pastNegatives(doc) || negativeReviews(doc).length >= wanted,
+    maxLoads: MAX_MORE_LOADS,
+    onLoad: () => onProgress(negativeReviews(doc)),
+  });
+  const reviews = negativeReviews(doc);
+  if (previous && previous !== reviewsTab) previous.click();
+  if (box) {
+    await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
+    box.scrollTop = scrollTop;
+  }
+  return reviews;
 }
 
 // Shows one review in the Google Maps panel: opens the reviews tab, sorts by lowest

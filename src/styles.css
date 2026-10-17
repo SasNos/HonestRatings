@@ -53,6 +53,9 @@
 .hr-overlay__debug { margin: 8px 0 0; color: var(--hr-on-surface-variant); font-size: 12px; line-height: 16px; }
 .hr-review { margin-top: 8px; padding: 12px; border-radius: 12px; background: var(--hr-purple-container); cursor: pointer; }
 .hr-review:hover, .hr-review:focus-visible { outline: 2px solid var(--hr-purple); outline-offset: -2px; }
+.hr-overlay__more { display: block; box-sizing: border-box; width: 100%; height: 36px; margin-top: 8px; border: 0; border-radius: 18px; background: none; color: var(--hr-purple); font: 500 14px/20px var(--hr-font); cursor: pointer; }
+.hr-overlay__more:hover:not(:disabled) { background: var(--hr-purple-container); }
+.hr-overlay__more:disabled { color: var(--hr-on-surface-variant); cursor: default; }
 .hr-review__text--empty { color: var(--hr-on-surface-variant); font-style: italic; }
 .hr-flash { outline: 3px solid var(--hr-purple); outline-offset: 4px; border-radius: 12px; transition: outline-color 0.3s; }
 .hr-review__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 500; }

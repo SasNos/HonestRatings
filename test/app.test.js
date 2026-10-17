@@ -104,6 +104,8 @@ describe('place overlay', () => {
     placePage('Cafe');
     createApp(document).scan();
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'), { timeout: 6000 });
+    // let the collector finish, so it does not run into the next test
+    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'), { timeout: 6000 });
   });
   it('shows the reviews while they load and shows one in Google Maps on click', async () => {
     go('/maps/place/Cafe/@1,2,3z');
@@ -121,6 +123,80 @@ describe('place overlay', () => {
     await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
     expect(document.querySelector('[data-review-id="r"]').classList.contains('hr-flash')).toBe(true);
     delete window.HTMLElement.prototype.scrollIntoView;
+  });
+  describe('Load more', () => {
+    function more() {
+      go('/maps/place/Cafe/@1,2,3z');
+      placePage('Cafe');
+      Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+      const state = { loads: 0 };
+      // Maps starts the review list from the beginning whenever the reviews tab opens.
+      document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+        state.loads = 0;
+      });
+      Object.defineProperty(document.body, 'scrollTop', {
+        configurable: true,
+        get: () => 0,
+        set(value) {
+          if (value > 0 && state.loads < 40) {
+            state.loads += 1;
+            document.getElementById('area').insertAdjacentHTML('beforeend', `<div data-review-id="m${state.loads}"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">More ${state.loads}</span></div>`);
+          }
+        },
+      });
+      return state;
+    }
+    afterEach(() => {
+      delete document.body.scrollHeight;
+      delete document.body.clientHeight;
+      delete document.body.scrollTop;
+    });
+
+    it('loads more negative reviews on request and shows the new count', async () => {
+      const state = more();
+      createApp(document, FAST).scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      const before = document.querySelectorAll('.hr-review').length;
+      document.querySelector('.hr-overlay__more').click();
+      await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), { timeout: 3000 });
+      // 41 loaded now, the histogram knows 40: nothing left to load
+      await vi.waitFor(() => expect(overlayText()).not.toContain('Loading the negative reviews'), { timeout: 3000 });
+      expect(document.querySelector('.hr-overlay__more')).toBeNull();
+      expect(state.loads).toBeGreaterThan(0);
+      expect(overlayText()).toContain('41 negative reviews (1-2 stars), 1 star first');
+    });
+    it('keeps what is shown when the second load brings nothing, and works from the cache', async () => {
+      go('/maps/place/Cafe/@1,2,3z');
+      placePage('Cafe');
+      const app = createApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      const shown = document.querySelectorAll('.hr-review').length;
+      document.querySelector('.hr-overlay__more').click();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')?.disabled).toBe(false), { timeout: 3000 });
+      expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
+      go('/maps/search/x');
+      app.scan();
+      go('/maps/place/Cafe/@1,2,3z');
+      app.scan();
+      document.querySelector('.hr-overlay__more').click();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')?.disabled).toBe(false), { timeout: 3000 });
+      expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
+    });
+    it('drops the result when the user leaves the place meanwhile', async () => {
+      more();
+      const app = createApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+        go('/maps/search/x');
+        app.scan();
+      });
+      document.querySelector('.hr-overlay__more').click();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      expect(document.getElementById('hr-overlay')).toBeNull();
+    });
   });
   it('drops a run that became stale while the reviews were collected', async () => {
     go('/maps/place/Cafe/@1,2,3z');

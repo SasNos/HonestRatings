@@ -63,7 +63,7 @@ function reviewCard(review, onReview) {
 
 // Panel on the right of the map with the negative reviews of the open place.
 // While reviews are still loading it can be shown again with what is there so far.
-export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, onReview = () => {} }) {
+export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, onReview = () => {}, onMore = () => {} }) {
   const previous = document.getElementById(ID);
   const scrollTop = previous ? previous.scrollTop : 0;
   removeOverlay();
@@ -95,6 +95,19 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
     panel.append(paragraph('hr-overlay__note', `${reviews.length}${total} negative ${reviews.length === 1 && !total ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
   }
   for (const review of reviews) panel.append(reviewCard(review, onReview));
+  // The histogram knows more negative reviews than are loaded: offer to load more.
+  if (!loading && !signedOut && summary?.exact && summary.bad > reviews.length) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'hr-overlay__more';
+    more.textContent = `Load more (${reviews.length} of ${summary.bad.toLocaleString('en-US')})`;
+    more.addEventListener('click', () => {
+      more.disabled = true;
+      more.textContent = 'Loading…';
+      onMore();
+    });
+    panel.append(more);
+  }
   if (!loading && debug && reviews.length === 0 && !signedOut) {
     const found = (flag) => (flag ? 'found' : 'missing');
     panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`));

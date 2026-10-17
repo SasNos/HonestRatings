@@ -59,6 +59,24 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews: [reviews[0]] }).textContent).toContain('1 negative review (1-2 stars)');
     expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
   });
+  it('offers "Load more" only while the histogram knows more negative reviews than are shown', () => {
+    const exact = { stars: 1, share: 0.02, bad: 40, total: 2000, exact: true, average: 4.9 };
+    const reviews = [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }];
+    const onMore = vi.fn();
+    const panel = showOverlay({ title: 'A', summary: exact, reviews, onMore });
+    const button = panel.querySelector('.hr-overlay__more');
+    expect(button.textContent).toBe('Load more (1 of 40)');
+    button.click();
+    expect(onMore).toHaveBeenCalledTimes(1);
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toBe('Loading…');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
+    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
+    expect(showOverlay({ title: 'A', summary: exact, reviews, loading: true }).querySelector('.hr-overlay__more')).toBeNull();
+    expect(showOverlay({ title: 'A', summary: exact, reviews, signedOut: true }).querySelector('.hr-overlay__more')).toBeNull();
+    expect(showOverlay({ title: 'A', reviews }).querySelector('.hr-overlay__more')).toBeNull();
+    showOverlay({ title: 'A', summary: exact, reviews }).querySelector('.hr-overlay__more').click();
+  });
   it('opens a review on click, Enter or Space and ignores other keys', () => {
     const onReview = vi.fn();
     const panel = showOverlay({ title: 'Cafe', reviews: [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }], onReview });

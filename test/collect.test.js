@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { collect, findReviewsTab, findSort, revealReview, waitFor } from '../src/dom/collect.js';
+import { collect, findReviewsTab, findSort, loadMoreReviews, revealReview, waitFor } from '../src/dom/collect.js';
 
 const FAST = { timeout: 50, interval: 5, settle: 0, restore: 0 };
 
@@ -147,6 +147,14 @@ describe('loading more reviews', () => {
     expect(result.reviews).toEqual([]);
     expect(state.loads).toBe(2);
   });
+  it('scrolls the last review into view as well as the container', async () => {
+    const scrollIntoView = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    scrollingPanel(() => {});
+    await collect(document, FAST);
+    delete window.HTMLElement.prototype.scrollIntoView;
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'end' });
+  });
   it('does not scroll when there is no scrollable panel', async () => {
     panel();
     const result = await collect(document, FAST);
@@ -160,6 +168,66 @@ describe('collect progress', () => {
     const seen = [];
     await collect(document, FAST, (reviews) => seen.push(reviews.map((r) => r.text)));
     expect(seen.at(0)).toEqual(['Bad']);
+  });
+});
+
+describe('loadMoreReviews', () => {
+  const review = (id, stars, text) => `<div data-review-id="${id}"><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
+  function scrolling(onLoad) {
+    const clicks = panel({ ones: 50 });
+    Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+    Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+    const state = { loads: 0, clicks };
+    Object.defineProperty(document.body, 'scrollTop', {
+      configurable: true,
+      get: () => 0,
+      set(value) {
+        if (value > 0) {
+          state.loads += 1;
+          onLoad(state.loads, document.getElementById('area'));
+        }
+      },
+    });
+    return state;
+  }
+  afterEach(() => {
+    delete document.body.scrollHeight;
+    delete document.body.clientHeight;
+    delete document.body.scrollTop;
+  });
+
+  it('reopens the reviews tab, loads until enough negative reviews are there and restores the tab', async () => {
+    const seen = [];
+    const state = scrolling((count, area) => area.insertAdjacentHTML('beforeend', review(`x${count}`, 1, `More ${count}`)));
+    const reviews = await loadMoreReviews(document, FAST, 4, (list) => seen.push(list.length));
+    expect(reviews.map((r) => r.text)).toEqual(['Bad', 'More 1', 'More 2', 'More 3']);
+    expect(state.loads).toBe(3);
+    expect(seen).toEqual([2, 3, 4]);
+    expect(state.clicks).toEqual(['reviews', 'sort', 'lowest', 'overview']);
+  });
+  it('works without a progress callback and stops above the bad reviews', async () => {
+    const state = scrolling((count, area) => area.insertAdjacentHTML('beforeend', review(`y${count}`, 4, 'Fine')));
+    const reviews = await loadMoreReviews(document, FAST, 99);
+    expect(reviews.map((r) => r.text)).toEqual(['Bad']);
+    expect(state.loads).toBe(1);
+  });
+  it('gives up without a reviews tab and skips the sort menu when signed out', async () => {
+    panel({ withTabs: false });
+    expect(await loadMoreReviews(document, FAST, 5)).toEqual([]);
+    const state = scrolling(() => {});
+    document.body.insertAdjacentHTML('beforeend', '<a href="https://accounts.google.com/ServiceLogin">Sign in</a>');
+    expect(await loadMoreReviews(document, FAST, 5)).toEqual([]);
+    expect(state.clicks).not.toContain('sort');
+  });
+  it('uses the default timeouts and restores the scroll position', async () => {
+    const state = scrolling(() => {});
+    const reviews = await loadMoreReviews(document, {}, 1);
+    expect(reviews.map((r) => r.text)).toEqual(['Bad']);
+    expect(state.loads).toBe(0);
+  }, 20000);
+  it('does not scroll or restore anything without a scrollable panel', async () => {
+    panel();
+    expect((await loadMoreReviews(document, FAST, 5)).map((r) => r.text)).toEqual(['Bad']);
   });
 });
 

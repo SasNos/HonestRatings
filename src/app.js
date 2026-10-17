@@ -1,6 +1,6 @@
 import { SEL } from './dom/selectors.js';
 import { parseHistogram, parseRatingLabel } from './dom/parse.js';
-import { collect, revealReview, waitFor } from './dom/collect.js';
+import { collect, loadMoreReviews, revealReview, waitFor } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
@@ -41,6 +41,31 @@ export function createApp(doc = document, collectOptions = {}) {
   // A click on a review shows it in the Google Maps panel.
   const onReview = (review) => revealReview(doc, review.id, collectOptions);
 
+  // The newest result of the open place, for the "Load more" button.
+  let latest = null;
+
+  // "Load more": loads at least twenty more negative reviews than are shown now.
+  async function onMore() {
+    const { key, title, result } = latest;
+    const mine = run;
+    showOverlay({ title, ...result, loading: true, onReview, onMore });
+    doc.documentElement.classList.add('hr-collecting');
+    let reviews;
+    try {
+      reviews = await loadMoreReviews(doc, collectOptions, result.reviews.length + 20, (list) => {
+        // Maps starts the list from the beginning: show it again only once it is longer.
+        if (mine === run && list.length > result.reviews.length) showOverlay({ title, ...result, reviews: list, loading: true, onReview, onMore });
+      });
+    } finally {
+      doc.documentElement.classList.remove('hr-collecting');
+    }
+    if (mine !== run) return;
+    const next = { ...result, reviews: reviews.length > result.reviews.length ? reviews : result.reviews };
+    latest = { key, title, result: next };
+    cache.set(key, next);
+    showOverlay({ title, ...next, onReview, onMore });
+  }
+
   function summaryOf(histogram) {
     const panel = ratingOf(doc.querySelector('[role="main"]') || doc);
     return summarize({ histogram, average: panel?.rating.average, total: panel?.rating.total });
@@ -50,7 +75,10 @@ export function createApp(doc = document, collectOptions = {}) {
     const mine = ++run;
     const urlTitle = safeDecode(key).replace(/\+/g, ' ');
     const cached = cache.get(key);
-    if (cached) return showOverlay({ title: panelTitle() || urlTitle, ...cached, onReview });
+    if (cached) {
+      latest = { key, title: panelTitle() || urlTitle, result: cached };
+      return showOverlay({ title: latest.title, ...cached, onReview, onMore });
+    }
     showOverlay({ title: urlTitle, loading: true, onReview });
     // The URL changes before the panel does: wait until the panel shows this place, or give
     // up after a moment, so no numbers of the previous place are read.
@@ -83,7 +111,8 @@ export function createApp(doc = document, collectOptions = {}) {
     const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut, debug: data?.debug };
     // An empty result is not cached: it may just be a slow load, and a revisit should retry.
     if (result.reviews.length > 0) cache.set(key, result);
-    showOverlay({ title, ...result, onReview });
+    latest = { key, title, result };
+    showOverlay({ title, ...result, onReview, onMore });
   }
 
   // The place comes from the URL: the title and the panel change while the
