@@ -15,7 +15,7 @@ export const SEL = {
   review: '[data-review-id]',
   reviewAuthor: 'button[aria-label] > div:first-child, [class*="d4r55"]',
   reviewText: '[class*="wiI7pd"]',
-  chipBar: '[role="region"]',
+  menu: '[role="menu"]',
 };
 
 // Sort menu entries in Google's fixed order; language independent.
@@ -25,6 +25,3 @@ export const SORT_LOWEST_INDEX = 3;
 export const REVIEWS_TAB = /^(review|rezension|bewertung|avis|reseña|opinion|recension|beoordeling|avalia|レビュー|评论)/i;
 // Sort button label, for when the data-value attribute is missing.
 export const SORT_LABEL = /sort|sortier|trier|ordenar|ordina|sorteer|classific|排序|並び/i;
-// Rating chip label, used to place the "Negative" chip next to it.
-// The chip text starts with an icon glyph, so the label is searched, not anchored.
-export const RATING_CHIP = /(rating|bewertung|note|valoraci|valutazion|beoordeling|avalia)/i;

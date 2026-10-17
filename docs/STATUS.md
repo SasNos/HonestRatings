@@ -1,5 +1,9 @@
 # Status
 
+## Negative filter inside the Rating dropdown, 17 October 2026
+
+The own "Negative" chip is gone (no more layout jumps, and the earlier chip alignment and menu clipping work is obsolete). When Maps builds its rating menu (`div[role=menu]` whose `menuitemradio` rows carry star labels; it is rebuilt on every open), `src/ui/ratingMenu.js` appends a "Negative" section with five rows of purple stars: same 32px rows and 16px padding, a divider and a small heading. The pick filters the result list and closes the menu by dispatching Escape on it (clicking the chip again did not close it). The menu is enhanced from the MutationObserver without the 200 ms debounce so it does not visibly grow. Checked live (signed out, English): section renders natively, a click is picked, Escape closes the menu; the list filtering itself is covered by the tests only. There is no marker on the chip showing that a negative filter is active.
+
 ## Same numbers for every place, 17 October 2026
 
 "10 of 25 reviews are 1-2 stars" and 5 negative stars showed for every restaurant. Cause: `parseHistogram` scanned the whole page and read the extension's own chip stars ("5 of 5 negative stars" ... "1 of 5 negative stars", five rows of 5) as the histogram. Own stars (`.hr-stars`) are now skipped. The overlay summary now reads: purple stars, then "20% (200 / 1,000)" (bad reviews as share, count and all ratings; `~` on every estimated number), and a line "Google rating 4.0". The old text "Estimated from the average rating" is gone. Percentages under 10 % get one decimal.

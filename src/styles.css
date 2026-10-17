@@ -31,27 +31,12 @@
 .hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
 [data-hr-hidden], [data-hr-filtered] { display: none !important; }
 
-/* Matches the Maps filter chips: a 48px row with a 32px pill centered in it. */
-.hr-chip { position: relative; display: block; flex: none; height: 48px; margin: 0 6px 0 0; font: 500 14px/20px 'Google Sans Text', 'Google Sans', Roboto, Arial, sans-serif; }
-.hr-chip__button {
-  display: flex; align-items: center; gap: 4px; box-sizing: border-box; height: 32px; margin: 8px 0; padding: 0 4px 0 12px;
-  border: 0; border-radius: 8px; background: var(--hr-surface);
-  box-shadow: 0 1px 2px rgb(60 64 67 / 30%), 0 1px 3px 1px rgb(60 64 67 / 15%);
-  color: var(--hr-on-surface); font: inherit; cursor: pointer;
-}
-.hr-chip__button:hover { background: color-mix(in srgb, var(--hr-surface), var(--hr-on-surface) 8%); }
-.hr-chip__button:focus-visible { outline: 2px solid var(--hr-purple); outline-offset: 2px; }
-.hr-chip__caret { position: relative; flex: none; width: 24px; height: 24px; }
-.hr-chip__caret::after { content: ''; position: absolute; top: 10px; left: 7px; border: 5px solid transparent; border-top-color: currentColor; border-bottom: 0; }
-.hr-chip__menu {
-  position: fixed; z-index: 2000; min-width: 200px; margin: 0; padding: 8px 0;
-  list-style: none; background: var(--hr-surface); border-radius: 8px; box-shadow: var(--hr-shadow);
-}
-.hr-chip__menu[hidden] { display: none; }
-.hr-chip__menu li { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 16px; color: var(--hr-on-surface); font-weight: 400; cursor: pointer; }
-.hr-chip__menu li:hover, .hr-chip__menu li:focus { background: var(--hr-hover); outline: none; }
-.hr-chip__menu li[aria-selected="true"] { background: var(--hr-purple-container); }
-.hr-chip--floating { position: fixed; z-index: 1000; top: 8px; left: 424px; }
+/* "Negative" section inside the original Maps rating menu (same 32px rows, 16px padding). */
+.hr-menu-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hr-outline); }
+.hr-menu-heading { padding: 0 16px 4px; color: var(--hr-on-surface-variant); font: 500 12px/16px 'Google Sans Text', 'Google Sans', Roboto, Arial, sans-serif; }
+.hr-menu-item { display: flex; align-items: center; box-sizing: border-box; height: 32px; padding: 0 16px; cursor: pointer; }
+.hr-menu-item:hover, .hr-menu-item:focus { background: var(--hr-hover); outline: none; }
+.hr-menu-item[aria-checked="true"] { background: var(--hr-purple-container); }
 
 .hr-overlay {
   position: fixed; z-index: 1000; top: 72px; right: 16px; width: 360px; max-height: calc(100vh - 96px);

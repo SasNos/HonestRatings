@@ -53,53 +53,75 @@ describe('result cards', () => {
     app.scan();
     expect(document.querySelectorAll('[data-hr-badge]')).toHaveLength(1);
   });
-  it('places the chip after the rating chip and filters by negative stars', () => {
-    results(card(), card('2.0 stars 100 Reviews'));
-    createApp(document, FAST).scan();
-    const chip = document.querySelector('.hr-chip');
-    expect(document.querySelector('button').nextElementSibling).toBe(chip);
-    chip.querySelectorAll('li')[4].click();
+  it('never mistakes its own stars for a rating, even when Maps removes the original', () => {
+    results(card());
+    const app = createApp(document, FAST);
+    app.scan();
+    document.querySelector('[data-hr-hidden]').remove();
+    app.scan();
+    expect(document.querySelector('[role="article"]').hasAttribute('data-hr-filtered')).toBe(false);
+    expect(document.querySelector('[data-hr-badge]').dataset.hrStars).toBe('1');
+  });
+  it('rebuilds the badge when Maps reuses a card for another place', () => {
+    results(card());
+    const app = createApp(document, FAST);
+    app.scan();
+    document.querySelector('[data-hr-hidden]').setAttribute('aria-label', '2.5 stars 100 Reviews');
+    app.scan();
+    expect(document.querySelectorAll('[data-hr-badge]')).toHaveLength(1);
+    expect(document.querySelector('[data-hr-badge]').dataset.hrStars).toBe('5');
+    app.scan();
+    expect(document.querySelectorAll('[data-hr-badge]')).toHaveLength(1);
+  });
+});
+
+describe('rating menu', () => {
+  const ratingMenu = `<div role="menu" aria-label="Rating"><div id="list">
+    <div role="menuitemradio"><div>Any rating</div></div>
+    <div role="menuitemradio"><span aria-label="2.0 stars"></span></div></div></div>`;
+
+  function page() {
+    document.body.innerHTML = `${ratingMenu}<div role="menu" aria-label="Sort"><div><div role="menuitemradio">Newest</div></div></div><div role="feed">${card()}${card('2.0 stars 100 Reviews')}</div>`;
+    const escapes = vi.fn();
+    document.querySelector('[aria-label="Rating"]').addEventListener('keydown', (event) => event.key === 'Escape' && escapes());
+    return escapes;
+  }
+
+  it('adds the Negative section to the rating menu only, once', () => {
+    page();
+    const app = createApp(document, FAST);
+    app.scan();
+    app.scan();
+    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
+    expect(document.getElementById('list').lastElementChild.className).toBe('hr-menu-section');
+  });
+  it('filters the list by the picked row and closes the menu with Escape', () => {
+    const escapes = page();
+    const app = createApp(document, FAST);
+    app.scan();
+    const rows = document.querySelectorAll('.hr-menu-item');
+    rows[0].click();
     const cards = document.querySelectorAll('[role="article"]');
     expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(true);
-    chip.querySelectorAll('li')[0].click();
+    expect(escapes).toHaveBeenCalledTimes(1);
+    rows[4].click();
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
   });
-  it('skips hidden duplicates and wrappers of the chip button', () => {
-    document.body.innerHTML = `<div id="row"><div id="hidden"><button>Rating</button></div><div id="item"><div id="wrap"><button>Rating</button></div></div><div>Price</div></div><div role="feed">${card()}</div>`;
-    const hidden = document.querySelector('#hidden button');
-    Element.prototype.getClientRects.mockImplementation(function rects() {
-      return this === hidden ? [] : [{}];
-    });
-    createApp(document, FAST).scan();
-    expect(document.querySelector('#item').nextElementSibling.className).toBe('hr-chip');
-    expect(document.querySelector('#hidden').querySelector('.hr-chip')).toBeNull();
-  });
-  it('moves a floating chip next to the rating chip once the filter bar appears', () => {
-    document.body.innerHTML = `<div role="feed">${card()}</div>`;
+  it('remembers the pick for the next time Maps builds the menu', () => {
+    page();
     const app = createApp(document, FAST);
     app.scan();
-    expect(document.querySelectorAll('.hr-chip--floating')).toHaveLength(1);
-    document.body.insertAdjacentHTML('afterbegin', '<button>Bewertung</button>');
-    app.scan();
-    const chip = document.querySelector('.hr-chip');
-    expect(chip.classList.contains('hr-chip--floating')).toBe(false);
-    expect(document.querySelector('button').nextElementSibling).toBe(chip);
+    document.querySelectorAll('.hr-menu-item')[1].click();
+    document.querySelector('[aria-label="Rating"]').remove();
+    document.body.insertAdjacentHTML('beforeend', ratingMenu);
+    app.enhanceMenus();
+    expect(document.querySelectorAll('.hr-menu-item')[1].getAttribute('aria-checked')).toBe('true');
   });
-  it('ignores long button texts that merely mention a rating', () => {
-    document.body.innerHTML = `<button>Show everything about the rating of this place</button><div role="feed">${card()}</div>`;
+  it('ignores menus without star rows', () => {
+    document.body.innerHTML = '<div role="menu" aria-label="Empty"></div><div role="menu"><div role="menuitemradio"><span aria-label="x"></span></div></div>';
     createApp(document, FAST).scan();
-    expect(document.querySelectorAll('.hr-chip--floating')).toHaveLength(1);
-  });
-  it('floats the chip when there is no rating chip, and only with results', () => {
-    document.body.innerHTML = '<p>nothing</p>';
-    const app = createApp(document, FAST);
-    app.scan();
-    expect(document.querySelector('.hr-chip')).toBeNull();
-    document.body.innerHTML = `<div role="feed">${card()}</div>`;
-    app.scan();
-    app.scan();
-    expect(document.querySelectorAll('.hr-chip--floating')).toHaveLength(1);
+    expect(document.querySelector('.hr-menu-section')).toBeNull();
   });
 });
 

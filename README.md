@@ -5,7 +5,7 @@ Chrome extension for Google Maps that puts the bad reviews first. Bad reviews sa
 ## What it does
 
 - **Result list:** the rating of every place is replaced by purple negative stars and the number of bad reviews (1-2 stars). A `~` in front of the number marks an estimate (see below).
-- **"Negative" filter:** a dropdown chip next to the "Rating" chip. Pick 1-5 purple stars to hide every place with more negative stars than that.
+- **"Negative" filter:** a "Negative" section with five rows of purple stars at the bottom of the original "Rating" dropdown, so the filter bar does not change. Pick 1-5 stars to hide every place with more negative stars than that (5 = show all).
 - **Place overlay:** when you open a place, an overlay appears at the top right: negative stars, the share of bad reviews with the count (for example `20% (200 / 1,000)`), Google's own rating, and the three worst reviews that contain text.
 
 ## How negative stars are calculated

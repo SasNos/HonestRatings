@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderStars } from '../src/ui/stars.js';
 import { renderBadge } from '../src/ui/badge.js';
-import { createChip } from '../src/ui/chip.js';
+import { enhanceRatingMenu } from '../src/ui/ratingMenu.js';
 import { removeOverlay, showOverlay } from '../src/ui/overlay.js';
 
 beforeEach(() => {
@@ -22,57 +22,34 @@ describe('stars and badge', () => {
   });
 });
 
-describe('chip', () => {
-  function mount() {
-    const onChange = vi.fn();
-    const chip = createChip(onChange);
-    document.body.append(chip);
-    return { chip, onChange, button: chip.querySelector('button'), menu: chip.querySelector('ul') };
+describe('rating menu section', () => {
+  function mount(current = 5) {
+    document.body.innerHTML = '<div id="list"></div>';
+    const onPick = vi.fn();
+    const list = document.getElementById('list');
+    const section = enhanceRatingMenu(list, current, onPick);
+    return { list, section, onPick, rows: [...section.querySelectorAll('[role="menuitemradio"]')] };
   }
-  it('opens in the body so the chip row cannot clip it, picks by click and closes', () => {
-    const { chip, onChange, button, menu } = mount();
-    expect(menu.hidden).toBe(true);
-    button.click();
-    expect(menu.hidden).toBe(false);
-    expect(menu.parentElement).toBe(document.body);
-    expect(menu.style.top).toBe('4px');
-    menu.querySelectorAll('li')[3].click();
-    expect(onChange).toHaveBeenCalledWith(2);
-    expect(menu.hidden).toBe(true);
-    expect(button.querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
-    expect(menu.querySelectorAll('li[aria-selected="true"]')).toHaveLength(1);
-    expect(chip.contains(menu)).toBe(false);
-    button.click();
-    button.click();
-    expect(menu.hidden).toBe(true);
+  it('appends a Negative heading and five rows of purple stars, marking the current one', () => {
+    const { list, section, rows } = mount(3);
+    expect(list.contains(section)).toBe(true);
+    expect(section.textContent).toContain('Negative');
+    expect(rows).toHaveLength(5);
+    expect(rows.map((row) => row.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true', 'false', 'false']);
+    expect(rows[0].getAttribute('aria-label')).toBe('Up to 1 negative stars');
+    expect(rows[4].getAttribute('aria-label')).toBe('Any number of negative stars');
+    expect(rows[1].querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
   });
-  it('picks by keyboard and ignores other keys', () => {
-    const { onChange, button, menu } = mount();
-    button.click();
-    const item = menu.querySelectorAll('li')[4];
-    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
-    expect(onChange).not.toHaveBeenCalled();
-    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(onChange).toHaveBeenCalledWith(1);
-    button.click();
-    item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-    expect(onChange).toHaveBeenCalledTimes(2);
-  });
-  it('closes on Escape (button or menu) and on outside clicks', () => {
-    const { chip, button, menu } = mount();
-    button.click();
-    chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(menu.hidden).toBe(false);
-    chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(menu.hidden).toBe(true);
-    button.click();
-    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(menu.hidden).toBe(true);
-    button.click();
-    menu.click();
-    expect(menu.hidden).toBe(false);
-    document.body.click();
-    expect(menu.hidden).toBe(true);
+  it('picks by click and by Enter or Space, ignoring other keys', () => {
+    const { rows, onPick } = mount();
+    rows[1].click();
+    expect(onPick).toHaveBeenLastCalledWith(2);
+    rows[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    expect(onPick).toHaveBeenCalledTimes(1);
+    rows[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onPick).toHaveBeenLastCalledWith(3);
+    rows[3].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(onPick).toHaveBeenLastCalledWith(4);
   });
 });
 

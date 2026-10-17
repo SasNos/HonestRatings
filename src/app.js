@@ -1,9 +1,9 @@
-import { SEL, RATING_CHIP } from './dom/selectors.js';
+import { SEL } from './dom/selectors.js';
 import { parseHistogram, parseRatingLabel } from './dom/parse.js';
 import { collect } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { renderBadge, BADGE_ATTR } from './ui/badge.js';
-import { createChip } from './ui/chip.js';
+import { enhanceRatingMenu, MENU_ATTR } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
@@ -23,11 +23,6 @@ export function createApp(doc = document, collectOptions = {}) {
   let place = null;
   let run = 0;
   const cache = new Map();
-
-  const chip = createChip((max) => {
-    maxStars = max;
-    decorateCards();
-  });
 
   function decorateCards() {
     for (const card of doc.querySelectorAll(SEL.card)) {
@@ -51,22 +46,22 @@ export function createApp(doc = document, collectOptions = {}) {
     }
   }
 
-  function placeChip() {
-    const floating = chip.classList.contains('hr-chip--floating');
-    if ((chip.isConnected && !floating) || !doc.querySelector(SEL.card)) return;
-    // Maps keeps a hidden duplicate of the chip row, so only a visible button counts.
-    const anchor = [...doc.querySelectorAll('button')].find(
-      (button) => button.getClientRects().length > 0 && button.textContent.length < 24 && RATING_CHIP.test(button.textContent),
-    );
-    if (anchor) {
-      // Insert next to the chip item, not inside the button's own wrapper.
-      let item = anchor;
-      while (item.parentElement.children.length === 1) item = item.parentElement;
-      chip.classList.remove('hr-chip--floating');
-      item.after(chip);
-    } else if (!chip.isConnected) {
-      chip.classList.add('hr-chip--floating');
-      doc.body.append(chip);
+  function pick(max, menu) {
+    maxStars = max;
+    decorateCards();
+    // Escape on the menu is what closes a Maps menu reliably.
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+  }
+
+  // Adds the "Negative" section to the original rating menu each time Maps
+  // builds it. The rating menu is the one whose items carry star labels.
+  function enhanceMenus() {
+    for (const menu of doc.querySelectorAll(SEL.menu)) {
+      const items = [...menu.querySelectorAll(SEL.sortOption)];
+      const starred = items.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label')));
+      if (menu.hasAttribute(MENU_ATTR) || !starred) continue;
+      menu.setAttribute(MENU_ATTR, '');
+      enhanceRatingMenu(starred.parentElement, maxStars, (max) => pick(max, menu));
     }
   }
 
@@ -115,12 +110,12 @@ export function createApp(doc = document, collectOptions = {}) {
   }
 
   function scan() {
-    placeChip();
+    enhanceMenus();
     decorateCards();
     trackPlace();
   }
 
-  return { scan };
+  return { scan, enhanceMenus };
 }
 
 export function start(doc = document, win = window) {
@@ -128,6 +123,8 @@ export function start(doc = document, win = window) {
   let timer = null;
   const schedule = () => {
     win.clearTimeout(timer);
+    // The menu is enhanced at once so it does not visibly grow; the rest is debounced.
+    app.enhanceMenus();
     timer = win.setTimeout(app.scan, SCAN_DELAY);
   };
   new win.MutationObserver(schedule).observe(doc.body, { childList: true, subtree: true });
