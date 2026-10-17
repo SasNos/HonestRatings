@@ -1,5 +1,9 @@
 # Status
 
+## Overlay still covered a Maps control, 17 October 2026
+
+User screenshot (narrow window): the overlay reached almost to the bottom edge and covered the Layers button with the street view preview next to the zoom controls. The bottom margin is now 136px (`max-height: calc(100vh - 72px - 136px)`) instead of 40px. Checked on the screenshot only, not on a live page with other window sizes.
+
 ## "Load more (10 of 12)" never changes, 17 October 2026
 
 User: after a while the button shows "Load more (10 of 12)" and stays that way. Maps obviously gives only the first page of ten (or the histogram counts ratings that the list does not contain, e.g. removed ones). Changes: a Load more attempt that brings no new review marks the result as exhausted; the button is replaced by the note "Maps lists only these 10 of 12 negative ratings; the rest may be removed or not listed" (also from the cache). The scroll step now also dispatches a wheel event on the container, in case the loader reacts to a wheel gesture. Whether the second page ever loads on a signed-in Maps page is still unknown; if it does not, the first page (ten reviews, 1 star first) is what Maps gives.

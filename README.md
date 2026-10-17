@@ -13,7 +13,7 @@ Maps itself stays untouched: no changed dropdown, no changed result list. The ex
 - **Load more:** when the star histogram knows more negative reviews than are loaded, the overlay says "X of Y" and offers a "Load more" button at the end of the list.
 - **A click on a review** (or Enter) shows it in the Google Maps panel: the extension opens the reviews tab, sorts by lowest rating, scrolls until the review is loaded, scrolls it to the middle and flashes it.
 
-The overlay sits right of the map and leaves the Maps controls free: below the account and filter rows, left of the zoom, location and street view buttons, above the attribution.
+The overlay sits right of the map and leaves the Maps controls free: below the account and filter rows, left of the zoom, location and street view buttons, above the Layers button and the attribution at the bottom.
 
 ## How negative stars are calculated
 

@@ -30,11 +30,12 @@
 
 .hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
 
-/* Right of the map but left of the Maps controls (zoom, location, street view sit in the
-   outermost 64px) and below the account and filter rows (72px), above the attribution (40px). */
+/* Right of the map but left of the Maps controls (zoom, location and street view sit in the
+   outermost 64px), below the account and filter rows (72px) and above the controls at the
+   bottom: the Layers button with the street view preview and the attribution (136px). */
 .hr-overlay {
   position: fixed; z-index: 1000; top: 72px; right: 80px; bottom: auto; width: min(360px, calc(100vw - 408px - 96px));
-  min-width: 240px; max-height: calc(100vh - 112px);
+  min-width: 240px; max-height: calc(100vh - 72px - 136px);
   overflow-y: auto; box-sizing: border-box; padding: 16px; border-radius: 16px;
   background: var(--hr-surface); color: var(--hr-on-surface); box-shadow: var(--hr-shadow); font: 400 14px/20px var(--hr-font);
 }
