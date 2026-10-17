@@ -43,12 +43,21 @@ function longestText(element) {
   return texts.sort((a, b) => b.length - a.length)[0] || '';
 }
 
+// "1 star", "1 Stern", "Rated 1 out of 5 stars": the first number is 1-5 and
+// any second number is the 5. Avatars and badges in the review are skipped.
+function starsOf(element) {
+  for (const image of element.querySelectorAll(SEL.ratingImage)) {
+    const numbers = image.getAttribute('aria-label').match(/\d+/g);
+    if (numbers && numbers[0] >= 1 && numbers[0] <= 5 && (numbers.length === 1 || numbers[1] === '5')) return Number(numbers[0]);
+  }
+  return null;
+}
+
 export function parseReview(element) {
-  const star = element.querySelector(SEL.ratingImage);
-  const stars = star ? parseInt((star.getAttribute('aria-label') || '').match(/\d/)?.[0], 10) : NaN;
+  const stars = starsOf(element);
   const text = element.querySelector(SEL.reviewText)?.textContent.trim() || longestText(element);
   const author = element.querySelector(SEL.reviewAuthor)?.textContent.trim() || '';
-  return { author, stars: Number.isNaN(stars) ? null : stars, text };
+  return { author, stars, text };
 }
 
 // The worst reviews that actually contain text, in the order Maps lists them

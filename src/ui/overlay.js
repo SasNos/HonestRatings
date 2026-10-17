@@ -69,7 +69,7 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
     for (const review of reviews) panel.append(reviewCard(review));
     if (debug && reviews.length === 0 && !signedOut) {
       const found = (flag) => (flag ? 'found' : 'missing');
-      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}`));
+      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`));
     }
   }
   document.body.append(panel);

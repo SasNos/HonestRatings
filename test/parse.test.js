@@ -57,6 +57,17 @@ describe('reviews', () => {
     expect(parseReview(html('<div><span role="img" aria-label="stars"></span></div>').firstChild).stars).toBeNull();
     expect(parseReview(html('<div><span role="img" aria-label=""></span></div>').firstChild).stars).toBeNull();
   });
+  it('finds the stars among other images in the review', () => {
+    const avatar = '<img role="img" aria-label="Photo of Ann">';
+    const guide = '<span role="img" aria-label="Local Guide"></span>';
+    const mk = (label) => html(`<div>${avatar}${guide}<span role="img" aria-label="${label}"></span></div>`).firstChild;
+    expect(parseReview(mk('1 star')).stars).toBe(1);
+    expect(parseReview(mk('Mit 2 von 5 Sternen bewertet')).stars).toBe(2);
+    expect(parseReview(mk('Rated 3 out of 5')).stars).toBe(3);
+    expect(parseReview(mk('9 stars')).stars).toBeNull();
+    expect(parseReview(mk('2 of 7')).stars).toBeNull();
+    expect(parseReview(mk('0 stars')).stars).toBeNull();
+  });
   it('falls back to the longest plain text when the text class is gone', () => {
     const element = html('<div><button>A very long button label that must not count</button><span>short</span><span>The staff ignored us for an hour.</span><div>Shorter sentence here.</div></div>').firstChild;
     expect(parseReview(element).text).toBe('The staff ignored us for an hour.');

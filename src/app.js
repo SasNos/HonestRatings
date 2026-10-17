@@ -98,7 +98,8 @@ export function createApp(doc = document, collectOptions = {}) {
     }
     if (mine !== run) return;
     const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut, debug: data?.debug };
-    cache.set(key, result);
+    // An empty result is not cached: it may just be a slow load, and a revisit should retry.
+    if (result.reviews.length > 0) cache.set(key, result);
     showOverlay({ title, ...result });
   }
 

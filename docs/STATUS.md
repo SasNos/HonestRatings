@@ -1,5 +1,9 @@
 # Status
 
+## "No bad reviews with text" again, 17 October 2026
+
+Reported after the dropdown fix; the debug line was not available, so the cause is not confirmed. Two likely causes fixed: an empty result was cached for the place (one slow load then stuck until reload), and the star rating of a review was read from the first image in the review (an avatar or badge could come first, so the review was dropped). Stars are now taken from the first image whose label looks like a rating ("1 star", "Mit 2 von 5 Sternen bewertet"). The debug line also prints how many review elements have stars and text. If it still fails, that line says where.
+
 ## Dropdown did not open, 17 October 2026
 
 The menu was an absolutely positioned child of the chip, and the Maps chip row is only 48px high and clips its children, so the menu opened but stayed invisible. The menu now moves into the body on first open and is positioned fixed under the button (`position: fixed`, z-index 2000). Verified live with real clicks (signed out, English): the menu shows below the chip with the five purple star rows.
