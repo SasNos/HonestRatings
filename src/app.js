@@ -19,15 +19,18 @@ function ratingOf(scope) {
 }
 
 export function createApp(doc = document, collectOptions = {}) {
-  // A place stays in the list with at least this many negative stars (1 = all).
-  let minStars = 1;
+  // 0: the original Maps view and Maps' own rating filter. 1-5: the negative view,
+  // places stay with at least this many negative stars. Both filters exclude each other.
+  let minStars = 0;
+  let internalClick = false;
+  const watched = new WeakSet();
   let place = null;
   let run = 0;
   const cache = new Map();
 
   function decorateCards() {
     // The list stays the original Maps one until a negative filter is chosen.
-    doc.documentElement.toggleAttribute('data-hr-negative', minStars > 1);
+    doc.documentElement.toggleAttribute('data-hr-negative', minStars > 0);
     for (const card of doc.querySelectorAll(SEL.card)) {
       const found = ratingOf(card);
       const label = found?.image.getAttribute('aria-label');
@@ -49,9 +52,14 @@ export function createApp(doc = document, collectOptions = {}) {
     }
   }
 
-  function pick(min, menu) {
+  function pick(min, menu, mapsItems) {
     minStars = min;
     decorateCards();
+    // Reset Maps' own rating filter to "Any rating" so the two filters never combine.
+    internalClick = true;
+    mapsItems[0].click();
+    internalClick = false;
+    mapsItems.forEach((item) => item.setAttribute('aria-checked', 'false'));
     // Escape on the menu is what closes a Maps menu reliably.
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
   }
@@ -64,7 +72,18 @@ export function createApp(doc = document, collectOptions = {}) {
       const starred = items.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label')));
       // Maps keeps the menu element and rebuilds its rows, so look for our section, not a flag.
       if (!starred || menu.querySelector(`.${SECTION_CLASS}`)) continue;
-      enhanceRatingMenu(starred.parentElement, minStars, (min) => pick(min, menu));
+      enhanceRatingMenu(starred.parentElement, minStars, (min) => pick(min, menu, items));
+      // While the negative view is active no Maps option may look selected.
+      if (minStars > 0) items.forEach((item) => item.setAttribute('aria-checked', 'false'));
+      if (!watched.has(menu)) {
+        watched.add(menu);
+        // Picking a Maps option (any of them) leaves the negative view.
+        menu.addEventListener('click', (event) => {
+          if (internalClick || event.target.closest(`.${SECTION_CLASS}`) || !event.target.closest(SEL.sortOption)) return;
+          minStars = 0;
+          decorateCards();
+        });
+      }
     }
   }
 

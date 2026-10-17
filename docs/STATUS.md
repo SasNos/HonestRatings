@@ -1,5 +1,9 @@
 # Status
 
+## Maps rating filter and negative filter exclude each other, 17 October 2026
+
+The two filters were combined (AND). Now they are exclusive: state `minStars` is 0 for the Maps view (original ratings, Maps' own filter, no negative row selected) and 1-5 for the negative view. Picking a negative row sets the state, clicks Maps' "Any rating" item (first menu item, with a flag so the click does not count as a Maps pick), marks all Maps items unselected and closes the menu with Escape. Any click on a Maps item in the menu sets the state back to 0. Row "1" is now a real pick (all places, purple view), so the neutral state is separate from it. Not verified live: that Maps accepts the scripted click on "Any rating" and refreshes the list.
+
 ## Filter direction reversed, 17 October 2026
 
 Picking N negative stars now keeps the places with at least N negative stars (before: at most N). 1 is the neutral row (everything stays), 5 shows only the worst places, which is roughly the same as filtering Google ratings of 5 minus N or lower. The neutral value moved from 5 to 1, so the negative list view is active for N above 1.

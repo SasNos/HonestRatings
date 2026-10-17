@@ -77,15 +77,18 @@ describe('result cards', () => {
 
 describe('rating menu', () => {
   const ratingMenu = `<div role="menu" aria-label="Rating"><div id="list">
-    <div role="menuitemradio"><div>Any rating</div></div>
-    <div role="menuitemradio"><span aria-label="2.0 stars"></span></div></div></div>`;
+    <div role="menuitemradio" aria-checked="true"><div>Any rating</div></div>
+    <div role="menuitemradio" aria-checked="false"><span aria-label="2.0 stars"></span></div></div></div>`;
 
   function page() {
     document.body.innerHTML = `${ratingMenu}<div role="menu" aria-label="Sort"><div><div role="menuitemradio">Newest</div></div></div><div role="feed">${card()}${card('2.0 stars 100 Reviews')}</div>`;
     const escapes = vi.fn();
+    const anyClicks = vi.fn();
     document.querySelector('[aria-label="Rating"]').addEventListener('keydown', (event) => event.key === 'Escape' && escapes());
-    return escapes;
+    document.querySelector('#list [role="menuitemradio"]').addEventListener('click', anyClicks);
+    return { escapes, anyClicks };
   }
+  const html = document.documentElement;
 
   it('adds the Negative section to the rating menu only, once', () => {
     page();
@@ -94,9 +97,10 @@ describe('rating menu', () => {
     app.scan();
     expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
     expect(document.getElementById('list').lastElementChild.className).toBe('hr-menu-section');
+    expect([...document.querySelectorAll('.hr-menu-item')].some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
   });
-  it('filters the list by the picked row and closes the menu with Escape', () => {
-    const escapes = page();
+  it('filters by at least N negative stars, resets the Maps filter and closes the menu', () => {
+    const { escapes, anyClicks } = page();
     const app = createApp(document, FAST);
     app.scan();
     const rows = document.querySelectorAll('.hr-menu-item');
@@ -105,41 +109,54 @@ describe('rating menu', () => {
     const cards = document.querySelectorAll('[role="article"]');
     expect(cards[0].hasAttribute('data-hr-filtered')).toBe(true);
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
+    expect(anyClicks).toHaveBeenCalledTimes(1);
     expect(escapes).toHaveBeenCalledTimes(1);
+    // our own click on "Any rating" must not leave the negative view
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
     rows[4].click();
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
     rows[0].click();
     expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
   });
-  it('shows the negative view only while a negative filter is active', () => {
+  it('leaves the negative view when a Maps option is picked, and not for our own rows', () => {
     page();
     const app = createApp(document, FAST);
     app.scan();
-    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
-    document.querySelectorAll('.hr-menu-item')[1].click();
-    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(true);
+    expect(html.hasAttribute('data-hr-negative')).toBe(false);
     document.querySelectorAll('.hr-menu-item')[0].click();
-    expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
+    document.querySelector('.hr-menu-heading').click();
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
+    document.querySelector('[aria-label="Rating"]').click();
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
+    document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
+    expect(html.hasAttribute('data-hr-negative')).toBe(false);
+    expect(document.querySelector('[role="article"]').hasAttribute('data-hr-filtered')).toBe(false);
   });
-  it('adds the section again when Maps rebuilds the rows inside the same menu element', () => {
+  it('shows no Maps option as selected while the negative view is active, and watches a menu once', () => {
     page();
     const app = createApp(document, FAST);
     app.scan();
     document.querySelectorAll('.hr-menu-item')[2].click();
-    document.getElementById('list').innerHTML = '<div role="menuitemradio"><span aria-label="2.0 stars"></span></div>';
-    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(0);
+    expect(document.querySelectorAll('#list > [aria-checked="true"]')).toHaveLength(0);
+    document.getElementById('list').innerHTML = '<div role="menuitemradio" aria-checked="true"><div>Any rating</div></div><div role="menuitemradio" aria-checked="true"><span aria-label="2.0 stars"></span></div>';
     app.enhanceMenus();
-    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
+    const mapsItems = [...document.querySelectorAll('#list > [role="menuitemradio"]')];
+    expect(mapsItems.map((item) => item.getAttribute('aria-checked'))).toEqual(['false', 'false']);
     expect(document.querySelectorAll('.hr-menu-item')[2].getAttribute('aria-checked')).toBe('true');
+    mapsItems[0].click();
+    expect(html.hasAttribute('data-hr-negative')).toBe(false);
   });
-  it('remembers the pick for the next time Maps builds the menu', () => {
+  it('adds the section again when Maps rebuilds the rows and remembers the pick', () => {
     page();
     const app = createApp(document, FAST);
     app.scan();
     document.querySelectorAll('.hr-menu-item')[1].click();
-    document.querySelector('[aria-label="Rating"]').remove();
-    document.body.insertAdjacentHTML('beforeend', ratingMenu);
+    document.getElementById('list').innerHTML = '<div role="menuitemradio"><span aria-label="2.0 stars"></span></div>';
+    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(0);
     app.enhanceMenus();
+    expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
     expect(document.querySelectorAll('.hr-menu-item')[1].getAttribute('aria-checked')).toBe('true');
   });
   it('ignores menus without star rows', () => {

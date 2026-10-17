@@ -23,7 +23,7 @@ describe('stars and badge', () => {
 });
 
 describe('rating menu section', () => {
-  function mount(current = 1) {
+  function mount(current = 0) {
     document.body.innerHTML = '<div id="list"></div>';
     const onPick = vi.fn();
     const list = document.getElementById('list');
@@ -36,9 +36,12 @@ describe('rating menu section', () => {
     expect(section.textContent).toContain('Negative');
     expect(rows).toHaveLength(5);
     expect(rows.map((row) => row.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true', 'false', 'false']);
-    expect(rows[0].getAttribute('aria-label')).toBe('Any number of negative stars');
+    expect(rows[0].getAttribute('aria-label')).toBe('At least 1 negative star');
     expect(rows[4].getAttribute('aria-label')).toBe('At least 5 negative stars');
     expect(rows[1].querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
+  });
+  it('marks no row when the Maps view is active', () => {
+    expect(mount(0).rows.some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
   });
   it('picks by click and by Enter or Space, ignoring other keys', () => {
     const { rows, onPick } = mount();
