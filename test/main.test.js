@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest';
 
 it('starts the app when the content script loads', async () => {
-  document.body.innerHTML = '<div role="feed"><div role="article"><span role="img" aria-label="4.0 stars 100 Reviews"></span></div></div>';
+  window.history.replaceState({}, '', '/maps/place/Cafe/@1,2,3z');
+  document.body.innerHTML = '<div role="main"><h1>Cafe</h1></div>';
   await import('../src/main.js');
-  expect(document.querySelector('[data-hr-badge]')).not.toBeNull();
+  expect(document.getElementById('hr-overlay')).not.toBeNull();
+  window.history.replaceState({}, '', '/');
 });

@@ -2,7 +2,6 @@
 // without notice. Prefer ARIA roles and structure over obfuscated class names.
 
 export const SEL = {
-  card: '[role="feed"] [role="article"]',
   ratingImage: '[role="img"][aria-label]',
   placeTitle: '[role="main"] h1',
   feed: '[role="feed"]',
@@ -15,7 +14,6 @@ export const SEL = {
   review: '[data-review-id]',
   reviewAuthor: 'button[aria-label] > div:first-child, [class*="d4r55"]',
   reviewText: '[class*="wiI7pd"]',
-  menu: '[role="menu"]',
 };
 
 // Sort menu entries in Google's fixed order; language independent.

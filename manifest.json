@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Honest Ratings",
   "version": "0.1.0",
-  "description": "Puts the bad reviews on Google Maps first: negative stars, bad review counts and the three worst reviews.",
+  "description": "Shows the negative reviews of a Google Maps place at a glance: negative stars, share of bad reviews and every negative review, worst first.",
   "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
   "content_scripts": [
     {

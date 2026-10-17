@@ -1,59 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderStars } from '../src/ui/stars.js';
-import { renderBadge } from '../src/ui/badge.js';
-import { enhanceRatingMenu } from '../src/ui/ratingMenu.js';
 import { removeOverlay, showOverlay } from '../src/ui/overlay.js';
 
 beforeEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('stars and badge', () => {
+describe('stars', () => {
   it('fills the requested number of stars', () => {
     const stars = renderStars(2);
     expect(stars.querySelectorAll('.hr-star')).toHaveLength(5);
     expect(stars.querySelectorAll('.hr-star--empty')).toHaveLength(3);
     expect(stars.getAttribute('aria-label')).toBe('2 of 5 negative stars');
-  });
-  it('shows exact, estimated and unknown counts', () => {
-    expect(renderBadge({ stars: 1, bad: 1234, exact: true }).textContent).toBe('1,234 bad');
-    expect(renderBadge({ stars: 1, bad: 12, exact: false }).textContent).toBe('~12 bad');
-    expect(renderBadge({ stars: 1, bad: null, exact: false }).textContent).toBe('');
-  });
-});
-
-describe('rating menu section', () => {
-  function mount(current = 0) {
-    document.body.innerHTML = '<div id="list"></div>';
-    const onPick = vi.fn();
-    const list = document.getElementById('list');
-    const section = enhanceRatingMenu(list, current, onPick);
-    return { list, section, onPick, rows: [...section.querySelectorAll('[role="menuitemradio"]')] };
-  }
-  it('appends a Negative heading and three rows mirroring Google 4.0+, 3.0+ and 2.0+', () => {
-    const { list, section, rows } = mount(2);
-    expect(list.contains(section)).toBe(true);
-    expect(section.textContent).toContain('Negative');
-    expect(rows).toHaveLength(3);
-    expect(rows.map((row) => row.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false']);
-    expect(rows[0].getAttribute('aria-label')).toBe('1 negative star: Google rating 4.0 or higher');
-    expect(rows[1].getAttribute('aria-label')).toBe('2 negative stars: Google rating 3.0 or higher');
-    expect(rows[2].title).toBe('3 negative stars: Google rating 2.0 or higher');
-    expect(rows[1].querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
-  });
-  it('marks no row when the Maps view is active', () => {
-    expect(mount(0).rows.some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
-  });
-  it('picks by click and by Enter or Space, ignoring other keys', () => {
-    const { rows, onPick } = mount();
-    rows[1].click();
-    expect(onPick).toHaveBeenLastCalledWith(2);
-    rows[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
-    expect(onPick).toHaveBeenCalledTimes(1);
-    rows[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(onPick).toHaveBeenLastCalledWith(3);
-    rows[0].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-    expect(onPick).toHaveBeenLastCalledWith(1);
   });
 });
 

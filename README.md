@@ -4,10 +4,12 @@ Chrome extension for Google Maps that puts the bad reviews first. Bad reviews sa
 
 ## What it does
 
-- **Negative filter in the Rating dropdown:** a "Negative" section with three rows of purple stars at the bottom of the original "Rating" dropdown, so the filter bar does not change. A negative pick sets Maps back to "Any rating" and the extension keeps only places with a Google rating below 6 minus N: 1 negative star = below 5.0, 2 = below 4.0, 3 = below 3.0 (places without a rating stay). There is no 4 or 5 (they would be below 2.0 and below 1.0). The list switches to purple negative stars and the number of bad reviews (1-2 stars; a `~` marks an estimate, see below). Positive and negative are one choice: a negative pick leaves no Maps option selected, a Maps pick leaves no negative row selected and brings back the original Google ratings and Maps' own order.
-- **More results:** Maps lists only the first results, and most of them are good. While a negative row is picked the extension scrolls the result list to load more places until eight match (at most ten loads) and scrolls back to the top. Signed out, Maps caps the list at ten places.
-- **Worst first:** in the negative view the result list is sorted by negative stars, the worst places first (ties: lower Google rating first). Maps has no sort for this list, so the extension only changes the visual order (CSS `order`); headers stay on top, footers at the bottom, and the DOM is left as Maps built it. Leaving the negative view restores Maps' own order.
-- **Place overlay:** when you open a place, an overlay appears at the top right: negative stars, the share of bad reviews with the count (for example `20% (200 / 1,000)`), Google's own rating, and all negative reviews (1-2 stars) that contain text, worst first, in a scrollable list. The extension scrolls the review list to load more until it passes the 2-star reviews (at most eight loads).
+Maps itself stays untouched: no changed dropdown, no changed result list. The extension only adds one overlay at the top right that appears when you open a place:
+
+- negative stars (1-5 purple stars, fewer is better),
+- the share of bad reviews with the count, for example `20% (200 / 1,000)` (a `~` marks an estimate, see below),
+- Google's own rating,
+- **all negative reviews** (1-2 stars) that contain text, **worst first**, in a scrollable list. The extension scrolls the review list to load more until it passes the 2-star reviews (at most eight loads).
 
 ## How negative stars are calculated
 
@@ -21,7 +23,7 @@ Chrome extension for Google Maps that puts the bad reviews first. Bad reviews sa
 | up to 30 % | 4 |
 | more | 5 |
 
-A place with a 4.0 average typically lands at 1 star. The star histogram is only available in the place panel, so the result list can only estimate from the average rating (`~`). Once a place is opened, the overlay shows the exact numbers. The thresholds are constants in [src/scoring.js](src/scoring.js).
+A place with a 4.0 average typically lands at 1 star. The overlay uses the exact star histogram of the place panel; when it cannot be read, the numbers are estimated from the average rating (`~`). The thresholds are constants in [src/scoring.js](src/scoring.js).
 
 ## Install (developer mode)
 
@@ -33,11 +35,11 @@ Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" a
 
 ## Limits, honestly
 
-- The three worst reviews need a Google login: Maps only lets signed-in users sort reviews. Signed out, the overlay shows the exact bad-review count (if the histogram loads) and a sign-in hint.
+- The negative reviews need a Google login: Maps only lets signed-in users sort reviews. Signed out, the overlay shows the share and count of bad reviews (if the histogram loads) and a sign-in hint.
 - The extension reads the Maps page; it has no API key and sends nothing anywhere. When Google changes the markup, selectors break. All of them live in [src/dom/selectors.js](src/dom/selectors.js).
 - To read the reviews, the extension briefly switches the place panel to the Reviews tab, sorts by "Lowest rating" and switches back.
-- Maps loads only part of the reviews; the worst three are chosen among those loaded after sorting.
-- The sort menu is found by position (fourth entry) so it works in every Maps language; tab and chip labels are matched in English, German, French, Spanish, Italian, Dutch, Portuguese, Japanese and Chinese.
+- Maps loads reviews in pages; the overlay lists the negative ones it could load (up to eight scroll loads after sorting by lowest rating).
+- The sort menu is found by position (fourth entry) so it works in every Maps language; tab and sort labels are matched in English, German, French, Spanish, Italian, Dutch, Portuguese, Japanese and Chinese.
 
 ## Development
 

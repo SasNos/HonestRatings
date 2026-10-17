@@ -1,6 +1,10 @@
 # Status
 
-## Negative rows keep only worse places, all negative reviews in the overlay, 17 October 2026
+## Back to an overlay only, 17 October 2026
+
+New approach from the user: no dropdown, no change in the results, only the overlay at the top right so that negative reviews are in view at once, sorted worst first. Removed: the "Negative" section in the Rating dropdown (`ratingMenu.js`), the purple badges in the result list (`badge.js`), hiding of places, worst-first ordering of the list, loading more results, the mirrored/Any-rating clicks, and the CSS and selectors for them. Kept: place tracking by URL, waiting for the panel, the collector with sorting and loading of all negative reviews, the overlay (stars, share and counts `20% (200 / 1,000)`, Google rating, scrollable list of every 1-2 star review with text, worst first), the debug line. `src/app.js` is now just `scan()` (URL change opens the overlay) and `start()` (MutationObserver). 69 tests, 100 % coverage. The entries below describe the removed result-list work and are history only.
+
+## Negative rows keep only worse places (superseded), all negative reviews in the overlay, 17 October 2026
 
 User tests: the overlay showed the values of the previous place, and the negative rows changed nothing in the list. Decisions and changes:
 
