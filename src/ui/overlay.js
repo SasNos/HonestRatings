@@ -63,7 +63,7 @@ function reviewCard(review, onReview) {
 
 // Panel on the right of the map with the negative reviews of the open place.
 // While reviews are still loading it can be shown again with what is there so far.
-export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, onReview = () => {}, onMore = () => {} }) {
+export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, exhausted = false, onReview = () => {}, onMore = () => {} }) {
   const previous = document.getElementById(ID);
   const scrollTop = previous ? previous.scrollTop : 0;
   removeOverlay();
@@ -96,7 +96,11 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
   }
   for (const review of reviews) panel.append(reviewCard(review, onReview));
   // The histogram knows more negative reviews than are loaded: offer to load more.
-  if (!loading && !signedOut && summary?.exact && summary.bad > reviews.length) {
+  const missing = !loading && !signedOut && summary?.exact && summary.bad > reviews.length;
+  if (missing && exhausted) {
+    // Loading more did not bring anything: say so instead of offering the button again.
+    panel.append(paragraph('hr-overlay__note', `Maps lists only these ${reviews.length} of ${summary.bad.toLocaleString('en-US')} negative ratings; the rest may be removed or not listed.`));
+  } else if (missing) {
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'hr-overlay__more';

@@ -166,23 +166,26 @@ describe('place overlay', () => {
       expect(state.loads).toBeGreaterThan(0);
       expect(overlayText()).toContain('41 negative reviews (1-2 stars), 1 star first');
     });
-    it('keeps what is shown when the second load brings nothing, and works from the cache', async () => {
+    it('says so instead of offering the button again when loading more brings nothing, also from the cache', async () => {
       go('/maps/place/Cafe/@1,2,3z');
       placePage('Cafe');
       const app = createApp(document, FAST);
       app.scan();
       await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
       const shown = document.querySelectorAll('.hr-review').length;
+      go('/maps/search/x');
+      app.scan();
+      go('/maps/place/Cafe/@1,2,3z');
+      app.scan(); // from the cache, the button is still there
       document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')?.disabled).toBe(false), { timeout: 3000 });
+      await vi.waitFor(() => expect(overlayText()).toContain('Maps lists only these'), { timeout: 3000 });
+      expect(document.querySelector('.hr-overlay__more')).toBeNull();
       expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
       go('/maps/search/x');
       app.scan();
       go('/maps/place/Cafe/@1,2,3z');
-      app.scan();
-      document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')?.disabled).toBe(false), { timeout: 3000 });
-      expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
+      app.scan(); // the cache remembers that nothing more can be loaded
+      expect(overlayText()).toContain('Maps lists only these');
     });
     it('drops the result when the user leaves the place meanwhile', async () => {
       more();

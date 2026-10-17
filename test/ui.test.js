@@ -76,6 +76,9 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', summary: exact, reviews, signedOut: true }).querySelector('.hr-overlay__more')).toBeNull();
     expect(showOverlay({ title: 'A', reviews }).querySelector('.hr-overlay__more')).toBeNull();
     showOverlay({ title: 'A', summary: exact, reviews }).querySelector('.hr-overlay__more').click();
+    const done = showOverlay({ title: 'A', summary: exact, reviews, exhausted: true });
+    expect(done.querySelector('.hr-overlay__more')).toBeNull();
+    expect(done.textContent).toContain('Maps lists only these 1 of 40 negative ratings');
   });
   it('opens a review on click, Enter or Space and ignores other keys', () => {
     const onReview = vi.fn();

@@ -79,6 +79,8 @@ async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {
     // a guessed container may not be; the container is scrolled as well.
     elements.at(-1)?.scrollIntoView?.({ block: 'end' });
     box.scrollTop = box.scrollHeight;
+    // Some loaders only react to a wheel gesture.
+    box.dispatchEvent(new WheelEvent('wheel', { deltaY: 400, bubbles: true }));
     await waitFor(() => reviewElements(doc).length > before, { ...options, timeout: Math.min(options.timeout ?? 4000, 4000) });
     if (reviewElements(doc).length === before) {
       misses += 1;

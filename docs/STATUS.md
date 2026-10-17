@@ -1,5 +1,9 @@
 # Status
 
+## "Load more (10 of 12)" never changes, 17 October 2026
+
+User: after a while the button shows "Load more (10 of 12)" and stays that way. Maps obviously gives only the first page of ten (or the histogram counts ratings that the list does not contain, e.g. removed ones). Changes: a Load more attempt that brings no new review marks the result as exhausted; the button is replaced by the note "Maps lists only these 10 of 12 negative ratings; the rest may be removed or not listed" (also from the cache). The scroll step now also dispatches a wheel event on the container, in case the loader reacts to a wheel gesture. Whether the second page ever loads on a signed-in Maps page is still unknown; if it does not, the first page (ten reviews, 1 star first) is what Maps gives.
+
 ## "Load more" button and sturdier scrolling, 17 October 2026
 
 The patience fix of the entry below did not bring the 2-star reviews in the user's test ("nope", with the suggestion of a load-more button). Two changes, both untested against a live signed-in page:

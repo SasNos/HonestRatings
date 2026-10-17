@@ -60,7 +60,9 @@ export function createApp(doc = document, collectOptions = {}) {
       doc.documentElement.classList.remove('hr-collecting');
     }
     if (mine !== run) return;
-    const next = { ...result, reviews: reviews.length > result.reviews.length ? reviews : result.reviews };
+    // No growth means Maps lists no more reviews than these.
+    const grew = reviews.length > result.reviews.length;
+    const next = { ...result, reviews: grew ? reviews : result.reviews, exhausted: !grew };
     latest = { key, title, result: next };
     cache.set(key, next);
     showOverlay({ title, ...next, onReview, onMore });
