@@ -2,6 +2,7 @@
 
 Read this first, then `README.md` and `docs/STATUS.md`.
 
+- This is its own project in its own folder (Eigene\Tools\Honest Ratings). It has nothing to do with Askapalka (Blocks) or any other project: never touch their files, rules or notes, and keep this work in its own session.
 - The user talks German; everything in the repository is English (code, comments, file names, commit messages, docs). UI strings are English source strings.
 - The global rules of the user apply (`~/.claude/CLAUDE.md`): Google Material look with a 4 px grid, 100 % line and branch coverage (`npm test` enforces it), one logical change per commit with named paths, honest reports.
 - The repository is public (`github.com/SasNos/HonestRatings`, set up by the user). Nothing private goes in: no notes, no tokens.
