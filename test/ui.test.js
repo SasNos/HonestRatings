@@ -86,7 +86,24 @@ describe('overlay', () => {
     showOverlay({ title: 'A', summary: exact, reviews }).querySelector('.hr-overlay__more').click();
     const done = showOverlay({ title: 'A', summary: exact, reviews, exhausted: true });
     expect(done.querySelector('.hr-overlay__more')).toBeNull();
-    expect(done.textContent).toContain('Maps lists only these 1 of 40 negative ratings');
+    expect(done.textContent).toContain('1/40 results loaded');
+    expect(done.querySelector('.hr-overlay__done').title).toContain('Maps lists no more of them');
+    const complete = showOverlay({ title: 'A', summary: { ...exact, bad: 2 }, reviews: [...reviews, { id: 'b', author: 'Bob', stars: 1, text: 'x' }] });
+    expect(complete.textContent).toContain('2/2 results loaded');
+    expect(complete.querySelector('.hr-overlay__done').title).toBe('');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).textContent).toContain('1/1 results loaded');
+    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).not.toContain('results loaded');
+    expect(showOverlay({ title: 'A', summary: exact, reviews: [], exhausted: true }).textContent).not.toContain('results loaded');
+  });
+  it('scrolls the first newly loaded review to the top after Load more', () => {
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', { configurable: true, get() { return this.classList.contains('hr-review') ? 500 : 0; } });
+    const reviews = [0, 1, 2].map((i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' }));
+    expect(showOverlay({ title: 'A', reviews, scrollToReview: 2 }).scrollTop).toBe(492);
+    removeOverlay();
+    expect(showOverlay({ title: 'A', reviews, scrollToReview: 9 }).scrollTop).toBe(0);
+    removeOverlay();
+    expect(showOverlay({ title: 'A', reviews }).scrollTop).toBe(0);
+    delete HTMLElement.prototype.offsetTop;
   });
   it('opens a review on click, Enter or Space and ignores other keys', () => {
     const onReview = vi.fn();

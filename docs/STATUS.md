@@ -1,5 +1,9 @@
 # Status
 
+## Scroll to the new reviews, results loaded text, 17 October 2026
+
+After a Load more that brought new reviews the overlay scrolls so that the first new review is at the top (`scrollToReview` in `showOverlay`, set by the app only when the list grew). When no button is offered any more (everything loaded, or a Load more brought nothing) the overlay shows `[loaded]/[all] results loaded`, e.g. `12/12 results loaded` or `10/12 results loaded` (hover text explains that Maps lists no more of them); this replaces the longer "Maps lists only these" note. With only an estimated histogram there is no such line.
+
 ## Spinner while loading, 17 October 2026
 
 While the overlay loads (first collection and every Load more) a circular progress indicator (24px ring with a purple arc, `role="status"`, slower under `prefers-reduced-motion`) sits at the end of the list, in the place of the Load more button; when loading ends it is replaced by the button, the "Maps lists only these" note, or nothing. Covered by a unit test; the animation itself was not looked at in a live browser.

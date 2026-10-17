@@ -178,14 +178,14 @@ describe('place overlay', () => {
       go('/maps/place/Cafe/@1,2,3z');
       app.scan(); // from the cache, the button is still there
       document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(overlayText()).toContain('Maps lists only these'), { timeout: 3000 });
+      await vi.waitFor(() => expect(overlayText()).toMatch(/\d+\/\d+ results loaded/), { timeout: 3000 });
       expect(document.querySelector('.hr-overlay__more')).toBeNull();
       expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
       go('/maps/search/x');
       app.scan();
       go('/maps/place/Cafe/@1,2,3z');
       app.scan(); // the cache remembers that nothing more can be loaded
-      expect(overlayText()).toContain('Maps lists only these');
+      expect(overlayText()).toMatch(/\d+\/\d+ results loaded/);
     });
     it('drops the result when the user leaves the place meanwhile', async () => {
       more();

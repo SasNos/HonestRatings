@@ -65,7 +65,7 @@ export function createApp(doc = document, collectOptions = {}) {
     const next = { ...result, reviews: grew ? reviews : result.reviews, exhausted: !grew };
     latest = { key, title, result: next };
     cache.set(key, next);
-    showOverlay({ title, ...next, onReview, onMore });
+    showOverlay({ title, ...next, onReview, onMore, scrollToReview: grew ? result.reviews.length : null });
   }
 
   function summaryOf(histogram) {

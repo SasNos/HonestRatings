@@ -65,7 +65,7 @@ function reviewCard(review, onReview) {
 
 // Panel on the right of the map with the negative reviews of the open place.
 // While reviews are still loading it can be shown again with what is there so far.
-export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, exhausted = false, onReview = () => {}, onMore = () => {} }) {
+export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, exhausted = false, scrollToReview = null, onReview = () => {}, onMore = () => {} }) {
   const previous = document.getElementById(ID);
   const scrollTop = previous ? previous.scrollTop : 0;
   removeOverlay();
@@ -109,10 +109,14 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
     panel.append(wait);
   }
   // The histogram knows more negative reviews than are loaded: offer to load more.
-  const missing = !loading && !signedOut && summary?.exact && summary.bad > reviews.length;
-  if (missing && exhausted) {
-    // Loading more did not bring anything: say so instead of offering the button again.
-    panel.append(paragraph('hr-overlay__note', `Maps lists only these ${reviews.length} of ${summary.bad.toLocaleString('en-US')} negative ratings; the rest may be removed or not listed.`));
+  const known = !loading && !signedOut && summary?.exact;
+  const missing = known && summary.bad > reviews.length;
+  if (known && reviews.length > 0 && (!missing || exhausted)) {
+    // Nothing more to load: say how many of all negative ratings are shown.
+    const total = Math.max(summary.bad, reviews.length);
+    const done = paragraph('hr-overlay__note hr-overlay__done', `${reviews.length.toLocaleString('en-US')}/${total.toLocaleString('en-US')} results loaded`);
+    if (missing) done.title = 'Maps lists no more of them; the rest may be removed or not listed.';
+    panel.append(done);
   } else if (missing) {
     const more = document.createElement('button');
     more.type = 'button';
@@ -132,5 +136,8 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
   }
   document.body.append(panel);
   panel.scrollTop = scrollTop;
+  // After "Load more": bring the first newly loaded review to the top of the list.
+  const first = scrollToReview === null ? null : panel.querySelectorAll('.hr-review')[scrollToReview];
+  if (first) panel.scrollTop = first.offsetTop - 8;
   return panel;
 }
