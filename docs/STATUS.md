@@ -1,5 +1,9 @@
 # Status
 
+## Chip alignment, 17 October 2026
+
+The "Negative" chip now copies the Maps chip geometry measured on the live page: a 48px row with 6px right margin, a 32px pill centered in it (8px vertical margin), radius 8px, no border, Maps shadow, padding 0 4px 0 12px, label 500 14/20 Google Sans Text, 24px caret. Checked live (pill at the same y and height as the "Rating" chip); not re-checked in German or dark mode.
+
 ## First signed-in test (German Maps), 17 October 2026
 
 The debug line showed "sort button missing, 0 menu items, 26 review elements": the reviews are on the page, only the sort button was not found. Also "10 of 25 reviews" for a place with 659 reviews: the histogram parser assumed the order "5 stars, N reviews". And the chip stayed floating because the first scan ran before the filter bar existed.
