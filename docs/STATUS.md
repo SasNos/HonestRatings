@@ -1,5 +1,9 @@
 # Status
 
+## Flicker fix, 17 October 2026
+
+User test showed the panel jumping to the reviews and the overlay flickering on and off. Cause: the place was identified by the `h1`, which changes while the collector switches tabs, so every switch restarted the collection. Now the place comes from the URL path (`/maps/place/<name>`), results are cached per place, the exact numbers show at once from the overview histogram, the panel is faded out (`hr-collecting`) while tabs switch, and the scroll position is restored. 57 tests, 100 % coverage. Not yet re-tested in a real signed-in Chrome.
+
 ## State of 17 October 2026
 
 First version built: Manifest V3 extension, esbuild bundle in `dist/`, 55 tests, 100 % line and branch coverage.

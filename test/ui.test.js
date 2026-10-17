@@ -85,6 +85,11 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', summary: null, reviews: [] }).textContent).toContain('No bad reviews with text found.');
     expect(showOverlay({ title: 'A', loading: true }).textContent).toContain('Loading');
   });
+  it('shows a summary while loading', () => {
+    const panel = showOverlay({ title: 'A', summary: { stars: 1, bad: 1, total: 20, exact: true }, loading: true });
+    expect(panel.textContent).toContain('1 of 20');
+    expect(panel.textContent).toContain('Loading');
+  });
   it('asks to sign in when signed out', () => {
     expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');
   });

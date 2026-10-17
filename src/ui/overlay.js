@@ -56,10 +56,10 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
   header.append(heading, close);
   panel.append(header, paragraph('hr-overlay__place', title));
 
+  if (summary) panel.append(summaryRow(summary));
   if (loading) {
     panel.append(paragraph('hr-overlay__note', 'Loading the worst reviews…'));
   } else {
-    if (summary) panel.append(summaryRow(summary));
     if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the worst reviews.'));
     else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No bad reviews with text found.'));
     for (const review of reviews) panel.append(reviewCard(review));

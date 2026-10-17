@@ -1,5 +1,5 @@
 import { SEL, RATING_CHIP } from './dom/selectors.js';
-import { parseRatingLabel } from './dom/parse.js';
+import { parseHistogram, parseRatingLabel } from './dom/parse.js';
 import { collect } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { renderBadge, BADGE_ATTR } from './ui/badge.js';
@@ -20,6 +20,7 @@ export function createApp(doc = document, collectOptions = {}) {
   let maxStars = 5;
   let place = null;
   let run = 0;
+  const cache = new Map();
 
   const chip = createChip((max) => {
     maxStars = max;
@@ -56,29 +57,47 @@ export function createApp(doc = document, collectOptions = {}) {
     }
   }
 
-  async function openPlace(title) {
-    const mine = ++run;
-    showOverlay({ title, loading: true });
-    const data = await collect(doc, collectOptions);
-    if (mine !== run) return;
-    const panel = ratingOf(doc.querySelector('[role="main"]') || doc);
-    const summary = summarize({
-      histogram: data?.histogram ?? null,
-      average: panel?.rating.average,
-      total: panel?.rating.total,
-    });
-    showOverlay({ title, summary, reviews: data?.reviews ?? [], signedOut: data?.signedOut });
-  }
-
-  function trackPlace() {
+  function titleOf(key) {
     // Ads put a "Sponsored" h1 before the title; the results list has its own h1s.
     const titles = [...doc.querySelectorAll(SEL.placeTitle)].filter((h1) => !h1.closest(SEL.feed) && h1.textContent.trim());
-    const title = titles.at(-1)?.textContent.trim() || null;
-    if (title === place) return;
-    place = title;
+    return titles.at(-1)?.textContent.trim() || decodeURIComponent(key).replace(/\+/g, ' ');
+  }
+
+  function summaryOf(histogram) {
+    const panel = ratingOf(doc.querySelector('[role="main"]') || doc);
+    return summarize({ histogram, average: panel?.rating.average, total: panel?.rating.total });
+  }
+
+  async function openPlace(key) {
+    const mine = ++run;
+    const title = titleOf(key);
+    const cached = cache.get(key);
+    if (cached) return showOverlay({ title, ...cached });
+    // The overview already lists the star histogram, so the numbers show at once.
+    showOverlay({ title, summary: summaryOf(parseHistogram(doc)), loading: true });
+    // Hide the panel while the collector switches tabs, so it does not flicker.
+    doc.documentElement.classList.add('hr-collecting');
+    let data;
+    try {
+      data = await collect(doc, collectOptions);
+    } finally {
+      doc.documentElement.classList.remove('hr-collecting');
+    }
+    if (mine !== run) return;
+    const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut };
+    cache.set(key, result);
+    showOverlay({ title, ...result });
+  }
+
+  // The place comes from the URL: the title and the panel change while the
+  // collector switches tabs, the path does not.
+  function trackPlace() {
+    const key = doc.location.pathname.match(/\/maps\/place\/([^/]+)/)?.[1] ?? null;
+    if (key === place) return;
+    place = key;
     run += 1;
     removeOverlay();
-    if (title) openPlace(title);
+    if (key) openPlace(key);
   }
 
   function scan() {

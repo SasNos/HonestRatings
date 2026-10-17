@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { collect, findReviewsTab, waitFor } from '../src/dom/collect.js';
 
-const FAST = { timeout: 50, interval: 5, settle: 0 };
+const FAST = { timeout: 50, interval: 5, settle: 0, restore: 0 };
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -67,9 +67,26 @@ describe('collect', () => {
     expect(result.histogram[5]).toBe(5);
     expect(result.reviews).toHaveLength(1);
   });
+  it('restores the scroll position of the panel after the tab switch', async () => {
+    panel();
+    Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+    Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+    document.body.scrollTop = 40;
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      document.body.scrollTop = 0;
+    });
+    await collect(document, FAST);
+    expect(document.body.scrollTop).toBe(40);
+    delete document.body.scrollHeight;
+    delete document.body.clientHeight;
+  });
   it('uses default options', async () => {
     panel();
+    Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+    Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
     expect((await collect(document)).reviews).toHaveLength(1);
+    delete document.body.scrollHeight;
+    delete document.body.clientHeight;
   });
   it('returns no reviews when the sort button or the menu is missing', async () => {
     panel({ sort: false });

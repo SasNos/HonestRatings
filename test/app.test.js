@@ -72,51 +72,81 @@ describe('result cards', () => {
 });
 
 describe('place overlay', () => {
+  const go = (path) => window.history.replaceState({}, '', path);
+  const overlayText = () => document.getElementById('hr-overlay').textContent;
+  const histogram = [5, 4, 3, 2, 1].map((s) => `<span role="img" aria-label="${s} stars, ${s === 1 ? 20 : 10 * s} reviews"></span>`).join('');
+
   function placePage(title) {
-    document.body.innerHTML = `<div role="main"><h1>${title}</h1><span role="img" aria-label="4.0 stars 500 Reviews"></span>
+    document.body.innerHTML = `<div role="main"><h1>${title}</h1><span role="img" aria-label="4.0 stars 500 Reviews"></span>${histogram}
       <button role="tab" aria-label="Overview" aria-selected="true"></button><button role="tab" aria-label="Reviews" aria-selected="false"></button><div id="area"></div></div>`;
+    const area = document.getElementById('area');
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
-      document.getElementById('area').innerHTML = '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>';
+      area.innerHTML = '<button data-value="Sort"></button>';
+      area.querySelector('button').addEventListener('click', () => {
+        area.insertAdjacentHTML('beforeend', '<i role="menuitemradio"></i>'.repeat(3) + '<i role="menuitemradio" id="lowest"></i>');
+        document.getElementById('lowest').addEventListener('click', () => {
+          area.insertAdjacentHTML('beforeend', '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>');
+        });
+      });
     });
   }
-  const overlayText = () => document.getElementById('hr-overlay').textContent;
 
-  it('opens once per place, estimating from the panel rating without a histogram', async () => {
+  afterEach(() => go('/'));
+
+  it('shows the exact numbers at once and the reviews later, hiding the panel meanwhile', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
     const app = createApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Loading');
-    app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Estimated from the average rating'));
-    expect(overlayText()).toContain('Cafe');
+    expect(overlayText()).toContain('of');
+    expect(document.documentElement.classList.contains('hr-collecting')).toBe(true);
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    expect(document.documentElement.classList.contains('hr-collecting')).toBe(false);
   });
-  it('ignores a stale run when another place opens, and closes when the place goes away', async () => {
+  it('does not restart when the title changes while tabs switch, and caches the result', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
     const app = createApp(document, FAST);
     app.scan();
-    document.querySelector('h1').textContent = 'Bar';
+    document.querySelector('h1').textContent = 'Something else';
     app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bar'));
-    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'));
-    document.body.innerHTML = '';
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    expect(overlayText()).toContain('Cafe');
+    go('/maps/search/x');
     app.scan();
     expect(document.getElementById('hr-overlay')).toBeNull();
+    go('/maps/place/Cafe/@1,2,3z');
+    app.scan();
+    expect(overlayText()).toContain('Bad');
   });
-  it('takes the last h1 outside the results list as the title', async () => {
+  it('ignores a stale run when another place opens', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    const app = createApp(document, FAST);
+    app.scan();
+    go('/maps/place/Bar/@1,2,3z');
+    document.querySelector('h1').textContent = 'Bar';
+    app.scan();
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    expect(overlayText()).toContain('Bar');
+  });
+  it('takes the last h1 outside the results list, or the URL name without one', async () => {
+    go('/maps/place/Real%20Place+Two/@1,2,3z');
     document.body.innerHTML = '<div role="main"><div role="feed"><h1>Results</h1></div><h1>Sponsored</h1><h1>Real Place</h1><h1> </h1></div>';
-    createApp(document, FAST).scan();
+    const app = createApp(document, FAST);
+    app.scan();
     expect(overlayText()).toContain('Real Place');
+    go('/maps/place/Other%20Place+Two/@1,2,3z');
+    document.body.innerHTML = '<div role="main"></div>';
+    app.scan();
+    expect(overlayText()).toContain('Other Place Two');
     await vi.waitFor(() => expect(overlayText()).toContain('No bad reviews'));
   });
-  it('works without a rating or a reviews tab', async () => {
-    document.body.innerHTML = '<div role="main"><h1>Lonely</h1></div>';
+  it('works without a main region, a rating or a reviews tab', async () => {
+    go('/maps/place/Lonely/@1,2,3z');
+    document.body.innerHTML = '<h1>Lonely</h1>';
     createApp(document, FAST).scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('No bad reviews'));
-  });
-  it('falls back to the document when the main region disappears during collection', async () => {
-    document.body.innerHTML = '<div role="main"><h1>Y</h1></div>';
-    createApp(document, FAST).scan();
-    document.querySelector('[role="main"]').removeAttribute('role');
     await vi.waitFor(() => expect(overlayText()).toContain('No bad reviews'));
   });
 });

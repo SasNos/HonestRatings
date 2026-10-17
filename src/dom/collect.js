@@ -19,6 +19,13 @@ export function findReviewsTab(doc) {
   return tabs.find((tab) => REVIEWS_TAB.test((tab.getAttribute('aria-label') || tab.textContent).trim())) || null;
 }
 
+function scroller(element) {
+  for (let node = element.parentElement; node; node = node.parentElement) {
+    if (node.scrollHeight > node.clientHeight) return node;
+  }
+  return null;
+}
+
 // Opens the reviews tab, sorts by lowest rating and reads the histogram and the
 // worst reviews with text. Returns { histogram, reviews } or null. The previous
 // tab is restored afterwards so the panel looks as the user left it.
@@ -26,6 +33,8 @@ export async function collect(doc, options = {}) {
   const reviewsTab = findReviewsTab(doc);
   if (!reviewsTab) return null;
   const previous = [...doc.querySelectorAll(SEL.tab)].find((tab) => tab.getAttribute('aria-selected') === 'true');
+  const box = scroller(reviewsTab);
+  const scrollTop = box?.scrollTop;
   reviewsTab.click();
   const histogram = await waitFor(() => parseHistogram(doc), options);
   const sort = await waitFor(() => doc.querySelector(SEL.sortButton), options);
@@ -44,5 +53,10 @@ export async function collect(doc, options = {}) {
     }
   }
   if (previous && previous !== reviewsTab) previous.click();
+  if (box) {
+    // Maps re-renders the overview after the tab switch and resets the scroll position.
+    await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
+    box.scrollTop = scrollTop;
+  }
   return { histogram, reviews, signedOut };
 }
