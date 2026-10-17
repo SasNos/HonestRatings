@@ -97,6 +97,17 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
     panel.append(paragraph('hr-overlay__note', `${reviews.length}${total} negative ${reviews.length === 1 && !total ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
   }
   for (const review of reviews) panel.append(reviewCard(review, onReview));
+  // Where the "Load more" button goes, a spinner shows that something is happening.
+  if (loading) {
+    const wait = document.createElement('div');
+    wait.className = 'hr-overlay__loading';
+    wait.setAttribute('role', 'status');
+    wait.setAttribute('aria-label', 'Loading');
+    const spinner = document.createElement('span');
+    spinner.className = 'hr-spinner';
+    wait.append(spinner);
+    panel.append(wait);
+  }
   // The histogram knows more negative reviews than are loaded: offer to load more.
   const missing = !loading && !signedOut && summary?.exact && summary.bad > reviews.length;
   if (missing && exhausted) {

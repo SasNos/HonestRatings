@@ -1,5 +1,9 @@
 # Status
 
+## Spinner while loading, 17 October 2026
+
+While the overlay loads (first collection and every Load more) a circular progress indicator (24px ring with a purple arc, `role="status"`, slower under `prefers-reduced-motion`) sits at the end of the list, in the place of the Load more button; when loading ends it is replaced by the button, the "Maps lists only these" note, or nothing. Covered by a unit test; the animation itself was not looked at in a live browser.
+
 ## Load button wording, overlay flush with the navigation column, 17 October 2026
 
 - The button now says what it will do: "Load 2 more" when at most ten reviews are missing, otherwise "Load next 10 of 534" (534 = negative ratings still missing); each click asks for ten more (`LOAD_STEP` in `src/ui/overlay.js`, used by the app).

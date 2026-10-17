@@ -59,6 +59,12 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews: [reviews[0]] }).textContent).toContain('1 negative review (1-2 stars)');
     expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
   });
+  it('shows a spinner while loading, in the place of the Load more button, and not otherwise', () => {
+    const loading = showOverlay({ title: 'A', reviews: [], loading: true });
+    expect(loading.querySelector('.hr-overlay__loading[role="status"] .hr-spinner')).not.toBeNull();
+    const done = showOverlay({ title: 'A', reviews: [] });
+    expect(done.querySelector('.hr-spinner')).toBeNull();
+  });
   it('offers "Load more" only while the histogram knows more negative reviews than are shown', () => {
     const exact = { stars: 1, share: 0.02, bad: 40, total: 2000, exact: true, average: 4.9 };
     const reviews = [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }];
