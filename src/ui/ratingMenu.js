@@ -23,10 +23,9 @@ function row(rank, current, onPick) {
 }
 
 // Appends a "Negative" section to the item list of the original Maps rating
-// menu: three rows of purple stars that mirror the Maps options 4.0+, 3.0+ and
-// 2.0+ (1 negative star = Google 4.0 or higher). There is no 4 or 5: they would
-// mean "1.0 or higher" and "0.0 or higher", which is no filter. Current 0 means
-// no negative row is picked (the Maps view).
+// menu: three rows of purple stars. 1 negative star lists places with a Google
+// rating below 5.0, 2 below 4.0, 3 below 3.0. Current 0 means no negative row is
+// picked (the Maps view).
 export function enhanceRatingMenu(list, current, onPick) {
   const section = document.createElement('div');
   section.className = SECTION_CLASS;

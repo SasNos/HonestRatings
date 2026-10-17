@@ -1,4 +1,5 @@
 import { SEL } from './selectors.js';
+import { BAD_MAX_STARS } from '../scoring.js';
 
 const NUMBER = /\d+(?:[.,\u00a0\u202f]\d+)*/g;
 
@@ -62,8 +63,6 @@ export function parseReview(element) {
   return { author, stars, text };
 }
 
-// The worst reviews that actually contain text, in the order Maps lists them
-// (the list is sorted by lowest rating before this is called).
 // Maps puts data-review-id on the review and on an element inside it: take the
 // outermost element of each id once.
 export function reviewElements(root) {
@@ -77,10 +76,10 @@ export function reviewElements(root) {
   });
 }
 
-export function worstReviews(root, limit = 3) {
+// Every negative review (1-2 stars) that contains text, worst first.
+export function negativeReviews(root) {
   return reviewElements(root)
     .map(parseReview)
-    .filter((review) => review.text && review.stars !== null)
-    .sort((a, b) => a.stars - b.stars)
-    .slice(0, limit);
+    .filter((review) => review.text && review.stars !== null && review.stars <= BAD_MAX_STARS)
+    .sort((a, b) => a.stars - b.stars);
 }

@@ -105,26 +105,33 @@ describe('rating menu', () => {
     expect([...rows()].some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
   });
-  it('mirrors a negative row onto the Maps option (5 minus N), unselects Maps and closes the menu', () => {
+  it('sets Maps to Any rating, unselects the Maps options and closes the menu on a negative pick', () => {
     const { escapes, clicks } = page();
-    createApp(document, FAST).scan();
-    rows()[0].click(); // 1 negative star = Google 4.0 or higher
-    expect(clicks[3]).toHaveBeenCalledTimes(1);
-    rows()[1].click(); // 2 negative stars = Google 3.0 or higher
-    expect(clicks[2]).toHaveBeenCalledTimes(1);
-    rows()[2].click(); // 3 negative stars = Google 2.0 or higher
-    expect(clicks[1]).toHaveBeenCalledTimes(1);
-    expect(clicks[0]).not.toHaveBeenCalled();
+    createApp(document, FAST, 0).scan();
+    rows()[0].click();
+    rows()[1].click();
+    rows()[2].click();
+    expect(clicks[0]).toHaveBeenCalledTimes(3); // "Any rating", clicked by the extension itself
+    expect(clicks[1]).not.toHaveBeenCalled();
     expect(escapes).toHaveBeenCalledTimes(3);
-    expect(html.hasAttribute('data-hr-negative')).toBe(true); // our own click on the Maps option keeps the view
+    expect(html.hasAttribute('data-hr-negative')).toBe(true); // our own click keeps the view
     expect(document.querySelectorAll('#list > [aria-checked="true"]')).toHaveLength(0);
   });
-  it('still switches the view when Maps has no matching option', () => {
-    const { clicks } = page(anyRow + mapsRow('4.0 stars'));
-    createApp(document, FAST).scan();
-    rows()[1].click(); // 2 negative stars = 3.0, not in this menu
-    expect(html.hasAttribute('data-hr-negative')).toBe(true);
-    expect(Object.values(clicks).every((click) => click.mock.calls.length === 0)).toBe(true);
+  it('keeps only places with a Google rating below 6 minus N, and places without a rating', () => {
+    page();
+    document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', '<div role="article"><span>no rating</span></div>');
+    createApp(document, FAST, 0).scan();
+    const cards = () => [...document.querySelectorAll('[role="article"]')].map((c) => c.hasAttribute('data-hr-filtered'));
+    // Google 4.0, Google 2.0, no rating
+    expect(cards()).toEqual([false, false, false]);
+    rows()[0].click(); // below 5.0
+    expect(cards()).toEqual([false, false, false]);
+    rows()[1].click(); // below 4.0
+    expect(cards()).toEqual([true, false, false]);
+    rows()[2].click(); // below 3.0
+    expect(cards()).toEqual([true, false, false]);
+    document.querySelectorAll('#list > [role="menuitemradio"]')[1].click(); // a Maps option leaves the view
+    expect(cards()).toEqual([false, false, false]);
   });
   it('leaves the negative view when a Maps option is picked, but not for our own section', () => {
     page();
@@ -136,6 +143,57 @@ describe('rating menu', () => {
     expect(html.hasAttribute('data-hr-negative')).toBe(true);
     document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
+  });
+  describe('loading more results for a narrow filter', () => {
+    function feedWith(extra, label = '2.0 stars 100 Reviews') {
+      page();
+      const feed = document.querySelector('[role="feed"]');
+      Object.defineProperty(feed, 'scrollHeight', { value: 500, configurable: true });
+      const state = { loads: 0, resets: 0 };
+      Object.defineProperty(feed, 'scrollTop', {
+        configurable: true,
+        get: () => 0,
+        set(value) {
+          if (value === 0) state.resets += 1;
+          else {
+            state.loads += 1;
+            if (state.loads <= extra) feed.insertAdjacentHTML('beforeend', card(label));
+          }
+        },
+      });
+      return state;
+    }
+    it('scrolls until enough places match or nothing new arrives, then scrolls back', async () => {
+      const state = feedWith(2);
+      createApp(document, FAST, 0).scan();
+      rows()[1].click();
+      rows()[2].click(); // a second request while the first is still loading is ignored
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(3);
+      expect(document.querySelectorAll('[role="article"]:not([data-hr-filtered])')).toHaveLength(3);
+    });
+    it('stops at once when enough places already match', async () => {
+      const state = feedWith(0);
+      document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', card('2.0 stars 100 Reviews').repeat(8));
+      createApp(document, FAST, 0).scan();
+      rows()[1].click();
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(0);
+    });
+    it('gives up after the maximum number of loads', async () => {
+      const state = feedWith(Infinity, '4.0 stars 1,000 Reviews');
+      createApp(document, FAST, 0).scan();
+      rows()[2].click(); // below 3.0 hides every 4.0 place
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(10);
+    });
+    it('does nothing without a feed or without an active filter', () => {
+      page();
+      document.querySelector('[role="feed"]').remove();
+      createApp(document, FAST, 0).scan();
+      rows()[1].click();
+      expect(document.querySelectorAll('[role="article"]')).toHaveLength(0);
+    });
   });
   it('adds the section again when Maps rebuilds the rows, remembering the pick and unselecting Maps', () => {
     page();
@@ -221,13 +279,17 @@ describe('place overlay', () => {
   it('shows the exact numbers at once and the reviews later, hiding the panel meanwhile', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
+    let hiddenWhileSwitching = null;
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      hiddenWhileSwitching = document.documentElement.classList.contains('hr-collecting');
+    });
     const app = createApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Loading');
-    expect(overlayText()).toContain('25% (40 / 160)');
+    await vi.waitFor(() => expect(overlayText()).toContain('25% (40 / 160)'));
     expect(overlayText()).toContain('Google rating 4.0');
-    expect(document.documentElement.classList.contains('hr-collecting')).toBe(true);
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    expect(hiddenWhileSwitching).toBe(true);
     expect(document.documentElement.classList.contains('hr-collecting')).toBe(false);
   });
   it('does not restart when the title changes while tabs switch, and caches the result', async () => {
@@ -245,6 +307,66 @@ describe('place overlay', () => {
     go('/maps/place/Cafe/@1,2,3z');
     app.scan();
     expect(overlayText()).toContain('Bad');
+  });
+  it('waits for the panel of the new place so no numbers of the previous place are shown', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    const app = createApp(document, FAST);
+    app.scan();
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    go('/maps/place/Bar/@1,2,3z');
+    app.scan(); // the URL is new, the panel still shows Cafe
+    expect(overlayText()).toContain('Bar');
+    expect(overlayText()).not.toContain('Cafe');
+    expect(overlayText()).not.toContain('Google rating');
+    setTimeout(() => {
+      placePage('Bar');
+      document.querySelector('[role="main"] [aria-label^="5 stars"]').setAttribute('aria-label', '5 stars, 70 reviews');
+    }, 10);
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    expect(overlayText()).toContain('Bar');
+    expect(overlayText()).toContain('Google rating 4.0');
+    expect(overlayText()).toContain('22% (40 / 180)');
+  });
+  it('shows a cached place again, with the URL name when the panel has no title yet', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    const app = createApp(document, FAST);
+    app.scan();
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    go('/maps/search/x');
+    app.scan();
+    document.querySelector('h1').remove();
+    go('/maps/place/Cafe/@1,2,3z');
+    app.scan();
+    expect(overlayText()).toContain('Cafe');
+    expect(overlayText()).toContain('Bad');
+  });
+  it('works with the default timeouts', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    createApp(document).scan();
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), { timeout: 6000 });
+  });
+  it('drops a run that became stale while the reviews were collected', async () => {
+    go('/maps/place/Cafe/@1,2,3z');
+    placePage('Cafe');
+    const app = createApp(document, FAST);
+    // The user leaves the place right when the collector opens the reviews tab.
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      go('/maps/search/x');
+      app.scan();
+    });
+    app.scan();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(document.getElementById('hr-overlay')).toBeNull();
+  });
+  it('gives up waiting when the panel never shows the place, and copes with a broken URL name', async () => {
+    go('/maps/place/Ghost%E0%A4%A/@1,2,3z');
+    placePage('Something else');
+    createApp(document, FAST).scan();
+    expect(overlayText()).toContain('Ghost%E0%A4%A');
+    await vi.waitFor(() => expect(overlayText()).toContain('Something else'));
   });
   it('ignores a stale run when another place opens', async () => {
     go('/maps/place/Cafe/@1,2,3z');

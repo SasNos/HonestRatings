@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseHistogram, parseRatingLabel, parseReview, reviewElements, worstReviews } from '../src/dom/parse.js';
+import { parseHistogram, parseRatingLabel, parseReview, reviewElements, negativeReviews } from '../src/dom/parse.js';
 
 function html(markup) {
   const root = document.createElement('div');
@@ -84,11 +84,10 @@ describe('reviews', () => {
     const other = '<div data-review-id="b"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Bad</span></div>';
     const root = html(nested + sibling + other);
     expect(reviewElements(root)).toHaveLength(2);
-    expect(worstReviews(root).map((r) => r.text)).toEqual(['Awful', 'Bad']);
+    expect(negativeReviews(root).map((r) => r.text)).toEqual(['Awful', 'Bad']);
   });
-  it('picks the worst reviews that have text', () => {
-    const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + '<div data-review-id="y"></div>');
-    expect(worstReviews(root).map((r) => r.text)).toEqual(['a', 'd', 'b']);
-    expect(worstReviews(root, 1)).toHaveLength(1);
+  it('lists every negative review with text, worst first, and nothing above 2 stars', () => {
+    const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + review(5, 'e') + '<div data-review-id="y"></div>');
+    expect(negativeReviews(root).map((r) => r.text)).toEqual(['a', 'd', 'b']);
   });
 });

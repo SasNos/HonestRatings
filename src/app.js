@@ -1,18 +1,32 @@
 import { SEL } from './dom/selectors.js';
 import { parseHistogram, parseRatingLabel } from './dom/parse.js';
-import { collect } from './dom/collect.js';
+import { collect, waitFor } from './dom/collect.js';
 import { summarize } from './scoring.js';
 import { renderBadge, BADGE_ATTR } from './ui/badge.js';
 import { enhanceRatingMenu, SECTION_CLASS } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
+// Loading more results for a narrow filter: stop at this many visible places or tries.
+const ENOUGH_RESULTS = 8;
+const MAX_LOADS = 10;
 // CSS order values for the negative view: headers first, then the places worst
 // first, then places without a rating, then footers.
 const ORDER_HEADER = 0;
 const ORDER_RATED_BASE = 100000;
 const ORDER_UNRATED = 150000;
 const ORDER_FOOTER = 200000;
+
+function safeDecode(text) {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+}
+
+// Letters and digits only, so "Castelli+Romani" and "Castelli Romani" compare equal.
+const slug = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 function ratingOf(scope) {
   for (const image of scope.querySelectorAll(SEL.ratingImage)) {
@@ -24,11 +38,13 @@ function ratingOf(scope) {
   return null;
 }
 
-export function createApp(doc = document, collectOptions = {}) {
-  // 0: the original Maps view. 1-3: a negative row is picked; row N mirrors the Maps
-  // rating option "(5 - N).0 or higher" (1 = 4.0+, 2 = 3.0+, 3 = 2.0+) and switches the
-  // list to purple negative stars. A Maps option and a negative row exclude each other.
+export function createApp(doc = document, collectOptions = {}, loadDelay = 700) {
+  // 0: the original Maps view. 1-3: a negative row is picked. Maps is set to "Any rating"
+  // and the list switches to purple negative stars, keeping only places with a Google
+  // rating below (6 - N): 1 = below 5.0, 2 = below 4.0, 3 = below 3.0. A Maps option and
+  // a negative row exclude each other.
   let negative = 0;
+  let filling = false;
   let internalClick = false;
   const watched = new WeakSet();
   let place = null;
@@ -56,6 +72,8 @@ export function createApp(doc = document, collectOptions = {}) {
         badge.dataset.hrAverage = String(found.rating.average);
         found.image.after(badge);
       }
+      // Places without a rating stay; rated places at or above the limit go.
+      card.toggleAttribute('data-hr-filtered', negative > 0 && Boolean(found) && found.rating.average >= 6 - negative);
     }
     orderFeed();
   }
@@ -83,14 +101,31 @@ export function createApp(doc = document, collectOptions = {}) {
     }
   }
 
+  // Maps only lists the first results; with a narrow filter scroll the list to load more.
+  async function fillList() {
+    const feed = doc.querySelector(SEL.feed);
+    if (filling || !feed || negative === 0) return;
+    filling = true;
+    for (let tries = 0; tries < MAX_LOADS; tries += 1) {
+      const before = doc.querySelectorAll(SEL.card).length;
+      if (doc.querySelectorAll(`${SEL.card}:not([data-hr-filtered])`).length >= ENOUGH_RESULTS) break;
+      feed.scrollTop = feed.scrollHeight;
+      await new Promise((resolve) => setTimeout(resolve, loadDelay));
+      decorateCards();
+      if (doc.querySelectorAll(SEL.card).length === before) break;
+    }
+    feed.scrollTop = 0;
+    filling = false;
+  }
+
   function pick(rank, menu, mapsItems) {
     negative = rank;
     decorateCards();
-    // The mirrored Maps option does the real filtering (it reloads the list).
-    const mirrored = mapsItems.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label'))?.average === 5 - rank);
+    // Maps itself goes back to "Any rating" (its first item); the extension does the filtering.
     internalClick = true;
-    mirrored?.click();
+    mapsItems[0].click();
     internalClick = false;
+    fillList();
     mapsItems.forEach((item) => item.setAttribute('aria-checked', 'false'));
     // Escape on the menu is what closes a Maps menu reliably.
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
@@ -119,10 +154,10 @@ export function createApp(doc = document, collectOptions = {}) {
     }
   }
 
-  function titleOf(key) {
-    // Ads put a "Sponsored" h1 before the title; the results list has its own h1s.
+  // Ads put a "Sponsored" h1 before the title; the results list has its own h1s.
+  function panelTitle() {
     const titles = [...doc.querySelectorAll(SEL.placeTitle)].filter((h1) => !h1.closest(SEL.feed) && h1.textContent.trim());
-    return titles.at(-1)?.textContent.trim() || decodeURIComponent(key).replace(/\+/g, ' ');
+    return titles.at(-1)?.textContent.trim() || null;
   }
 
   function summaryOf(histogram) {
@@ -132,9 +167,23 @@ export function createApp(doc = document, collectOptions = {}) {
 
   async function openPlace(key) {
     const mine = ++run;
-    const title = titleOf(key);
+    const urlTitle = safeDecode(key).replace(/\+/g, ' ');
     const cached = cache.get(key);
-    if (cached) return showOverlay({ title, ...cached });
+    if (cached) return showOverlay({ title: panelTitle() || urlTitle, ...cached });
+    showOverlay({ title: urlTitle, loading: true });
+    // The URL changes before the panel does: wait until the panel shows this place, or give
+    // up after a moment, so no numbers of the previous place are read.
+    const wanted = slug(urlTitle);
+    let title = null;
+    await waitFor(() => {
+      const shownTitle = panelTitle();
+      const shown = slug(shownTitle || '');
+      if (!shown || !(shown.includes(wanted) || wanted.includes(shown))) return false;
+      title = shownTitle;
+      return true;
+    }, { ...collectOptions, timeout: Math.min(collectOptions.timeout ?? 4000, 3000) });
+    if (mine !== run) return;
+    title = title || panelTitle() || urlTitle;
     // The overview already lists the star histogram, so the numbers show at once.
     showOverlay({ title, summary: summaryOf(parseHistogram(doc)), loading: true });
     // Hide the panel while the collector switches tabs, so it does not flicker.
@@ -166,6 +215,8 @@ export function createApp(doc = document, collectOptions = {}) {
   function scan() {
     enhanceMenus();
     decorateCards();
+    // Maps reloads the list after a filter change: keep filling it while a filter is active.
+    fillList();
     trackPlace();
   }
 

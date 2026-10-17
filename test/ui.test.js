@@ -64,6 +64,7 @@ describe('overlay', () => {
     expect(panel.textContent).toContain('10% (5 / 50)');
     expect(panel.textContent).toContain('Google rating 4.3');
     expect(panel.querySelectorAll('.hr-review')).toHaveLength(2);
+    expect(panel.textContent).toContain('2 negative reviews (1-2 stars) with text');
     expect(panel.textContent).toContain('Anonymous');
     panel.querySelector('.hr-overlay__close').click();
     expect(document.getElementById('hr-overlay')).toBeNull();
@@ -87,6 +88,7 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false, histogram: null } }).textContent).toContain('sort button missing, 4 menu items, 0 review elements, histogram not found');
     expect(showOverlay({ title: 'A', reviews: [], debug, signedOut: true }).textContent).not.toContain('Debug');
     expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }], debug }).textContent).not.toContain('Debug');
+    expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }] }).textContent).toContain('1 negative review (1-2 stars) with text');
   });
   it('asks to sign in when signed out', () => {
     expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');

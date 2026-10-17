@@ -72,6 +72,66 @@ describe('findSort', () => {
   });
 });
 
+describe('loading more reviews', () => {
+  function scrollingPanel(onLoad) {
+    panel();
+    Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+    Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+    const state = { loads: 0 };
+    Object.defineProperty(document.body, 'scrollTop', {
+      configurable: true,
+      get: () => 0,
+      set(value) {
+        if (value > 0) {
+          state.loads += 1;
+          onLoad(state.loads, document.getElementById('area'));
+        }
+      },
+    });
+    return state;
+  }
+  const review = (id, stars, text) => `<div data-review-id="${id}"><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
+  afterEach(() => {
+    delete document.body.scrollHeight;
+    delete document.body.clientHeight;
+    delete document.body.scrollTop;
+  });
+
+  it('keeps scrolling until a review above the bad ones shows up', async () => {
+    const state = scrollingPanel((count, area) => {
+      area.insertAdjacentHTML('beforeend', count === 1 ? review('s', 2, 'Second') : review('t', 4, 'Fine'));
+    });
+    const result = await collect(document, FAST);
+    expect(state.loads).toBe(2);
+    expect(result.reviews.map((r) => r.text)).toEqual(['Bad', 'Second']);
+  });
+  it('stops when nothing new arrives', async () => {
+    const state = scrollingPanel(() => {});
+    const result = await collect(document, FAST);
+    expect(state.loads).toBe(1);
+    expect(result.reviews.map((r) => r.text)).toEqual(['Bad']);
+  });
+  it('gives up after the maximum number of loads', async () => {
+    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)));
+    const result = await collect(document, FAST);
+    expect(state.loads).toBe(8);
+    expect(result.reviews).toHaveLength(9);
+  });
+  it('scrolls once and gives up when no review element is on the page at all', async () => {
+    const state = scrollingPanel(() => {});
+    document.getElementById('area').addEventListener('click', () => {});
+    document.querySelectorAll('button[role="tab"]')[1].replaceWith(document.querySelectorAll('button[role="tab"]')[1].cloneNode(true));
+    const result = await collect(document, FAST);
+    expect(result.reviews).toEqual([]);
+    expect(state.loads).toBe(1);
+  });
+  it('does not scroll when there is no scrollable panel', async () => {
+    panel();
+    const result = await collect(document, FAST);
+    expect(result.reviews.map((r) => r.text)).toEqual(['Bad']);
+  });
+});
+
 describe('collect', () => {
   it('still reads the loaded reviews when there is no sort button', async () => {
     panel({ sort: false });
@@ -116,7 +176,7 @@ describe('collect', () => {
   it('waits until the list changes after choosing the sort order', async () => {
     panel();
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
-      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="old"><span role="img" aria-label="5 stars"></span><span class="wiI7pd">Great</span></div>');
+      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="old"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Early</span></div>');
       setTimeout(() => {
         document.querySelector('[data-review-id="old"]')?.setAttribute('data-review-id', 'new');
       }, 0);
@@ -125,7 +185,7 @@ describe('collect', () => {
       if (event.target.id === 'o3') document.querySelector('[data-review-id="old"], [data-review-id="new"]')?.setAttribute('data-review-id', 'new2');
     });
     const result = await collect(document, FAST);
-    expect(result.reviews.map((r) => r.text)).toContain('Great');
+    expect(result.reviews.map((r) => r.text)).toContain('Early');
   });
   it('uses default options', async () => {
     panel();

@@ -1,5 +1,14 @@
 # Status
 
+## Negative rows keep only worse places, all negative reviews in the overlay, 17 October 2026
+
+User tests: the overlay showed the values of the previous place, and the negative rows changed nothing in the list. Decisions and changes:
+
+- Overlay values: the URL changes before the panel does, so the overlay read the previous place's title and histogram. `openPlace` now waits (up to 3 s) until the panel title matches the place name from the URL, reads the title at that moment, and only then reads and collects. The cache still keys on the URL.
+- Negative rows (user chose "only worse places"): a negative pick clicks Maps' "Any rating" item and the extension hides places with a Google rating of at least 6 minus N (1 = below 5.0, 2 = below 4.0, 3 = below 3.0; unrated places stay). The Maps mirroring of the previous entry is removed. Because most places Maps lists are good, `fillList` (scroll the feed, up to 10 loads, until 8 places remain visible, then scroll back) is back, and runs again after Maps reloads the list. Combined with the worst-first order from the entry below.
+- Overlay reviews: `negativeReviews()` returns every review with text and 1-2 stars, worst first (was: the three lowest). `collect()` scrolls the review list (`loadNegatives`, at most 8 loads) until a review above 2 stars appears or nothing new arrives, reads the debug counts before switching back to the overview tab (they were read after and were often 0), and the overlay shows "N negative reviews (1-2 stars) with text" above the scrollable list. Without a working sort the negative ones among the loaded reviews are used.
+- Not verified live: the sign-in-only review loading, the scroll loading of reviews and of the result list (signed out Maps caps the list at ten).
+
 ## Worst first in the negative view, 17 October 2026
 
 User: only places with 1 negative star showed up (the Maps list is mostly 4.0 and better), asked for "worst first". `orderFeed()` in `src/app.js` gives the children of `[role=feed]` a CSS `order` while the negative view is active: places by negative stars descending, then Google rating ascending; places without a rating after the rated ones; header children (before the first place) on top; children with text after a place (footer) at the end; textless children after a place (dividers) travel with it. Leaving the negative view removes the inline order. Checked live (signed out): the feed is a flex column and reversed `order` values really reorder its cards. This only sorts what Maps has loaded: if the list holds only good places, 2 or 3 negative stars still have little to show; the Maps option 3.0+ or 2.0+ (the mirrored rows) controls what Maps lists at all.

@@ -75,6 +75,7 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
   } else {
     if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the worst reviews.'));
     else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No bad reviews with text found.'));
+    if (reviews.length > 0) panel.append(paragraph('hr-overlay__note', `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars) with text`));
     for (const review of reviews) panel.append(reviewCard(review));
     if (debug && reviews.length === 0 && !signedOut) {
       const found = (flag) => (flag ? 'found' : 'missing');
