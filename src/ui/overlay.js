@@ -1,6 +1,8 @@
 import { renderStars } from './stars.js';
 
 const ID = 'hr-overlay';
+// "Load more" asks for this many more reviews per click.
+export const LOAD_STEP = 10;
 
 export function removeOverlay() {
   document.getElementById(ID)?.remove();
@@ -104,7 +106,8 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'hr-overlay__more';
-    more.textContent = `Load more (${reviews.length} of ${summary.bad.toLocaleString('en-US')})`;
+    const remaining = summary.bad - reviews.length;
+    more.textContent = remaining <= LOAD_STEP ? `Load ${remaining} more` : `Load next ${LOAD_STEP} of ${remaining.toLocaleString('en-US')}`;
     more.addEventListener('click', () => {
       more.disabled = true;
       more.textContent = 'Loading…';

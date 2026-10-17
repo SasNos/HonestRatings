@@ -65,11 +65,13 @@ describe('overlay', () => {
     const onMore = vi.fn();
     const panel = showOverlay({ title: 'A', summary: exact, reviews, onMore });
     const button = panel.querySelector('.hr-overlay__more');
-    expect(button.textContent).toBe('Load more (1 of 40)');
+    expect(button.textContent).toBe('Load next 10 of 39');
     button.click();
     expect(onMore).toHaveBeenCalledTimes(1);
     expect(button.disabled).toBe(true);
     expect(button.textContent).toBe('Loading…');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 12 }, reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })) }).querySelector('.hr-overlay__more').textContent).toBe('Load 2 more');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 544 }, reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })) }).querySelector('.hr-overlay__more').textContent).toBe('Load next 10 of 534');
     expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
     expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
     expect(showOverlay({ title: 'A', summary: exact, reviews, loading: true }).querySelector('.hr-overlay__more')).toBeNull();

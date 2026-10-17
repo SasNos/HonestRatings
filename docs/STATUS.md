@@ -1,5 +1,10 @@
 # Status
 
+## Load button wording, overlay flush with the navigation column, 17 October 2026
+
+- The button now says what it will do: "Load 2 more" when at most ten reviews are missing, otherwise "Load next 10 of 534" (534 = negative ratings still missing); each click asks for ten more (`LOAD_STEP` in `src/ui/overlay.js`, used by the app).
+- Overlay geometry measured on the live page (1024x768, signed out): the Maps navigation column (location, zoom in and out, street view) has its right edge 20px from the right and starts 155px above the bottom edge; the apps button sits at the top (12-52px). The overlay is now `right: 20px` (flush with that column), `top: 72px` and at most `calc(100vh - 72px - 171px)` tall, so it ends above the column; the list scrolls inside. Width is at most 360px and shrinks for narrow windows.
+
 ## Overlay still covered a Maps control, 17 October 2026
 
 User screenshot (narrow window): the overlay reached almost to the bottom edge and covered the Layers button with the street view preview next to the zoom controls. The bottom margin is now 136px (`max-height: calc(100vh - 72px - 136px)`) instead of 40px. Checked on the screenshot only, not on a live page with other window sizes.

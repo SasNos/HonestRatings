@@ -2,7 +2,7 @@ import { SEL } from './dom/selectors.js';
 import { parseHistogram, parseRatingLabel } from './dom/parse.js';
 import { collect, loadMoreReviews, revealReview, waitFor } from './dom/collect.js';
 import { summarize } from './scoring.js';
-import { showOverlay, removeOverlay } from './ui/overlay.js';
+import { showOverlay, removeOverlay, LOAD_STEP } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
 
@@ -44,7 +44,7 @@ export function createApp(doc = document, collectOptions = {}) {
   // The newest result of the open place, for the "Load more" button.
   let latest = null;
 
-  // "Load more": loads at least twenty more negative reviews than are shown now.
+  // "Load more": loads ten more negative reviews than are shown now.
   async function onMore() {
     const { key, title, result } = latest;
     const mine = run;
@@ -52,7 +52,7 @@ export function createApp(doc = document, collectOptions = {}) {
     doc.documentElement.classList.add('hr-collecting');
     let reviews;
     try {
-      reviews = await loadMoreReviews(doc, collectOptions, result.reviews.length + 20, (list) => {
+      reviews = await loadMoreReviews(doc, collectOptions, result.reviews.length + LOAD_STEP, (list) => {
         // Maps starts the list from the beginning: show it again only once it is longer.
         if (mine === run && list.length > result.reviews.length) showOverlay({ title, ...result, reviews: list, loading: true, onReview, onMore });
       });

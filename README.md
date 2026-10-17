@@ -10,10 +10,10 @@ Maps itself stays untouched: no changed dropdown, no changed result list. The ex
 - the share of bad reviews with the count, for example `20% (200 / 1,000)` (a `~` marks an estimate, see below),
 - Google's own rating,
 - **all reviews with 1-2 stars**, with or without text, **1 star first, then 2 stars**, in a scrollable list. They appear while they load (the extension scrolls the review list, at most 30 loads), so the worst are in view at once.
-- **Load more:** when the star histogram knows more negative reviews than are loaded, the overlay says "X of Y" and offers a "Load more" button at the end of the list.
+- **Load more:** when the star histogram knows more negative reviews than are loaded, the overlay says "X of Y" and offers a button at the end of the list: "Load 2 more" when at most ten are missing, otherwise "Load next 10 of 534" (the number left). Each click loads ten more.
 - **A click on a review** (or Enter) shows it in the Google Maps panel: the extension opens the reviews tab, sorts by lowest rating, scrolls until the review is loaded, scrolls it to the middle and flashes it.
 
-The overlay sits right of the map and leaves the Maps controls free: below the account and filter rows, left of the zoom, location and street view buttons, above the Layers button and the attribution at the bottom.
+The overlay ends flush with the right edge of the Maps navigation column (zoom, location, street view) and stays above it: below the account and apps row, and 171 px above the bottom edge, so no Maps control is covered. It is only as tall as that leaves; the list scrolls.
 
 ## How negative stars are calculated
 
