@@ -7,9 +7,6 @@ import { enhanceRatingMenu, SECTION_CLASS } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
-// Loading more results for a narrow filter: stop at this many visible places or tries.
-const ENOUGH_RESULTS = 8;
-const MAX_LOADS = 10;
 
 function ratingOf(scope) {
   for (const image of scope.querySelectorAll(SEL.ratingImage)) {
@@ -21,13 +18,11 @@ function ratingOf(scope) {
   return null;
 }
 
-export function createApp(doc = document, collectOptions = {}, loadDelay = 700) {
-  // 0: the original Maps view and Maps' own rating filter. 1-5: the negative view,
-  // places stay with at least this many negative stars. Both filters exclude each other.
-  let minStars = 0;
-  // Exact band of the Maps rating options: "3.0" now means 3.0 to 3.4, not 3.0 or higher.
-  let band = null;
-  let filling = false;
+export function createApp(doc = document, collectOptions = {}) {
+  // 0: the original Maps view. 1-3: a negative row is picked; row N mirrors the Maps
+  // rating option "(5 - N).0 or higher" (1 = 4.0+, 2 = 3.0+, 3 = 2.0+) and switches the
+  // list to purple negative stars. A Maps option and a negative row exclude each other.
+  let negative = 0;
   let internalClick = false;
   const watched = new WeakSet();
   let place = null;
@@ -36,7 +31,7 @@ export function createApp(doc = document, collectOptions = {}, loadDelay = 700) 
 
   function decorateCards() {
     // The list stays the original Maps one until a negative filter is chosen.
-    doc.documentElement.toggleAttribute('data-hr-negative', minStars > 0);
+    doc.documentElement.toggleAttribute('data-hr-negative', negative > 0);
     for (const card of doc.querySelectorAll(SEL.card)) {
       const found = ratingOf(card);
       const label = found?.image.getAttribute('aria-label');
@@ -54,36 +49,16 @@ export function createApp(doc = document, collectOptions = {}, loadDelay = 700) 
         badge.dataset.hrStars = String(summary.stars);
         found.image.after(badge);
       }
-      const outsideBand = band !== null && found && (found.rating.average < band.min || found.rating.average >= band.max);
-      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) < minStars || Boolean(outsideBand));
     }
   }
 
-  // Maps only lists the first results; with a narrow filter scroll the list to load more.
-  async function fillList() {
-    const feed = doc.querySelector(SEL.feed);
-    if (filling || !feed || (minStars === 0 && band === null)) return;
-    filling = true;
-    for (let tries = 0; tries < MAX_LOADS; tries += 1) {
-      const before = doc.querySelectorAll(SEL.card).length;
-      if (doc.querySelectorAll(`${SEL.card}:not([data-hr-filtered])`).length >= ENOUGH_RESULTS) break;
-      feed.scrollTop = feed.scrollHeight;
-      await new Promise((resolve) => setTimeout(resolve, loadDelay));
-      decorateCards();
-      if (doc.querySelectorAll(SEL.card).length === before) break;
-    }
-    feed.scrollTop = 0;
-    filling = false;
-  }
-
-  function pick(min, menu, mapsItems) {
-    minStars = min;
-    band = null;
+  function pick(rank, menu, mapsItems) {
+    negative = rank;
     decorateCards();
-    fillList();
-    // Reset Maps' own rating filter to "Any rating" so the two filters never combine.
+    // The mirrored Maps option does the real filtering (it reloads the list).
+    const mirrored = mapsItems.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label'))?.average === 5 - rank);
     internalClick = true;
-    mapsItems[0].click();
+    mirrored?.click();
     internalClick = false;
     mapsItems.forEach((item) => item.setAttribute('aria-checked', 'false'));
     // Escape on the menu is what closes a Maps menu reliably.
@@ -98,19 +73,16 @@ export function createApp(doc = document, collectOptions = {}, loadDelay = 700) 
       const starred = items.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label')));
       // Maps keeps the menu element and rebuilds its rows, so look for our section, not a flag.
       if (!starred || menu.querySelector(`.${SECTION_CLASS}`)) continue;
-      enhanceRatingMenu(starred.parentElement, minStars, (min) => pick(min, menu, items));
-      // While the negative view is active no Maps option may look selected.
-      if (minStars > 0) items.forEach((item) => item.setAttribute('aria-checked', 'false'));
+      enhanceRatingMenu(starred.parentElement, negative, (rank) => pick(rank, menu, items));
+      // While a negative row is picked no Maps option may look selected.
+      if (negative > 0) items.forEach((item) => item.setAttribute('aria-checked', 'false'));
       if (!watched.has(menu)) {
         watched.add(menu);
         // Picking a Maps option (any of them) leaves the negative view.
         menu.addEventListener('click', (event) => {
           if (internalClick || event.target.closest(`.${SECTION_CLASS}`) || !event.target.closest(SEL.sortOption)) return;
-          minStars = 0;
-          const rating = parseRatingLabel(event.target.closest(SEL.sortOption).querySelector('[aria-label]')?.getAttribute('aria-label'));
-          band = rating ? { min: rating.average, max: rating.average + 0.5 } : null;
+          negative = 0;
           decorateCards();
-          fillList();
         });
       }
     }
@@ -163,8 +135,6 @@ export function createApp(doc = document, collectOptions = {}, loadDelay = 700) 
   function scan() {
     enhanceMenus();
     decorateCards();
-    // Maps reloads the list after a filter change: keep filling it while a filter is active.
-    fillList();
     trackPlace();
   }
 

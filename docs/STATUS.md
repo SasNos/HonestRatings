@@ -1,6 +1,12 @@
 # Status
 
-## Few results above one negative star, 17 October 2026
+## Negative rows mirror the Maps options, 17 October 2026
+
+The logic was rebuilt on the user's definition: the positive Maps options stay as they are (Google default, "or higher", 0.5 steps); the negative rows are aliases of them. 1 negative star = 4.0 or higher, 2 = 3.0 or higher, 3 = 2.0 or higher; there is no 4 or 5 (they would be 1.0+ and 0.0+). Picking a row clicks the matching Maps option (rating = 5 minus N, found by its star label, so it works in any language), marks no Maps option selected, closes the menu with Escape and switches the list to the purple negative view. Any Maps pick leaves the negative view. The client-side filtering, the exact bands and the automatic loading of more results from the previous entry are removed (Maps now filters itself). The negative stars shown in the list are still computed from the bad-review share and are not changed by the filter. Half steps for the negative rows were tried and dropped on the user's request.
+
+Verified live (signed out, English): a scripted click on the Maps option "4.0" is accepted (menu closes, the Maps URL gets the rating parameter). The new rows themselves were checked only in the tests and, earlier, as a rendered section in the real menu.
+
+## Few results above one negative star (superseded), 17 October 2026
 
 User: the negative filter only worked with 1 star. Cause: the result list holds mostly places with Google ratings of 4 or more, and two or more negative stars mean roughly 3.7 or worse, so almost nothing was left. Changes: (1) the Maps rating options become exact bands while the extension runs ("3.0" = 3.0 to 3.4; Maps' own server filter still means "or higher", the extension hides what is above the band; "Any rating" clears it); (2) with a band or a negative filter active the extension scrolls the result feed to load more places (until 8 match, at most 10 loads) and scrolls back to the top, and it repeats this after Maps reloads the list. Verified live only that the feed (`[role=feed]`, overflow auto) accepts a scripted scrollTop; signed out Maps caps the list at 10 places, so loading more could not be observed. Not verified: loading more while signed in.
 

@@ -29,7 +29,7 @@
 .hr-badge { display: none; align-items: center; gap: 4px; font: 400 12px/16px var(--hr-font); color: var(--hr-on-surface-variant); }
 .hr-badge__count { color: var(--hr-purple); font-weight: 500; }
 .hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
-[data-hr-filtered], [data-hr-negative] [data-hr-hidden] { display: none !important; }
+[data-hr-negative] [data-hr-hidden] { display: none !important; }
 [data-hr-negative] .hr-badge { display: inline-flex; }
 
 /* "Negative" section inside the original Maps rating menu (same 32px rows, 16px padding). */

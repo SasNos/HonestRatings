@@ -2,35 +2,38 @@ import { renderStars } from './stars.js';
 
 export const SECTION_CLASS = 'hr-menu-section';
 
-function row(min, current, onPick) {
+function row(rank, current, onPick) {
   const item = document.createElement('div');
   item.className = 'hr-menu-item';
   item.setAttribute('role', 'menuitemradio');
-  item.setAttribute('aria-checked', String(min === current));
-  item.setAttribute('aria-label', `At least ${min} negative ${min === 1 ? 'star' : 'stars'}`);
+  item.setAttribute('aria-checked', String(rank === current));
+  const label = `${rank} negative ${rank === 1 ? 'star' : 'stars'}: Google rating ${5 - rank}.0 or higher`;
+  item.setAttribute('aria-label', label);
+  item.title = label;
   item.tabIndex = 0;
-  item.append(renderStars(min));
-  item.addEventListener('click', () => onPick(min));
+  item.append(renderStars(rank));
+  item.addEventListener('click', () => onPick(rank));
   item.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      onPick(min);
+      onPick(rank);
     }
   });
   return item;
 }
 
 // Appends a "Negative" section to the item list of the original Maps rating
-// menu: five rows of purple stars, the picked one is the fewest negative stars a
-// place may have, like the "2.0+" rows above but the other way round. Current 0
-// means no negative row is picked (the Maps view).
+// menu: three rows of purple stars that mirror the Maps options 4.0+, 3.0+ and
+// 2.0+ (1 negative star = Google 4.0 or higher). There is no 4 or 5: they would
+// mean "1.0 or higher" and "0.0 or higher", which is no filter. Current 0 means
+// no negative row is picked (the Maps view).
 export function enhanceRatingMenu(list, current, onPick) {
   const section = document.createElement('div');
   section.className = SECTION_CLASS;
   const heading = document.createElement('div');
   heading.className = 'hr-menu-heading';
   heading.textContent = 'Negative';
-  section.append(heading, ...[1, 2, 3, 4, 5].map((min) => row(min, current, onPick)));
+  section.append(heading, ...[1, 2, 3].map((rank) => row(rank, current, onPick)));
   list.append(section);
   return section;
 }

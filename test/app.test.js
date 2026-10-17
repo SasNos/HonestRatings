@@ -76,163 +76,80 @@ describe('result cards', () => {
 });
 
 describe('rating menu', () => {
-  const ratingMenu = `<div role="menu" aria-label="Rating"><div id="list">
-    <div role="menuitemradio" aria-checked="true"><div>Any rating</div></div>
-    <div role="menuitemradio" aria-checked="false"><span aria-label="2.0 stars"></span></div></div></div>`;
+  const mapsRow = (label, checked = false) => `<div role="menuitemradio" aria-checked="${checked}"><span aria-label="${label}"></span></div>`;
+  const anyRow = '<div role="menuitemradio" aria-checked="true"><div>Any rating</div></div>';
+  const fullMenu = anyRow + mapsRow('2.0 stars') + mapsRow('3.0 stars') + mapsRow('4.0 stars');
 
-  function page() {
-    document.body.innerHTML = `${ratingMenu}<div role="menu" aria-label="Sort"><div><div role="menuitemradio">Newest</div></div></div><div role="feed">${card()}${card('2.0 stars 100 Reviews')}</div>`;
+  function page(rows = fullMenu) {
+    document.body.innerHTML = `<div role="menu" aria-label="Rating"><div id="list">${rows}</div></div><div role="menu" aria-label="Sort"><div><div role="menuitemradio">Newest</div></div></div><div role="feed">${card()}${card('2.0 stars 100 Reviews')}</div>`;
     const escapes = vi.fn();
-    const anyClicks = vi.fn();
+    const clicks = {};
     document.querySelector('[aria-label="Rating"]').addEventListener('keydown', (event) => event.key === 'Escape' && escapes());
-    document.querySelector('#list [role="menuitemradio"]').addEventListener('click', anyClicks);
-    return { escapes, anyClicks };
+    document.querySelectorAll('#list > [role="menuitemradio"]').forEach((item, index) => {
+      clicks[index] = vi.fn();
+      item.addEventListener('click', clicks[index]);
+    });
+    return { escapes, clicks };
   }
   const html = document.documentElement;
+  const rows = () => document.querySelectorAll('.hr-menu-item');
 
-  it('adds the Negative section to the rating menu only, once', () => {
+  it('adds the Negative section to the rating menu only, once, with no row selected', () => {
     page();
     const app = createApp(document, FAST);
     app.scan();
     app.scan();
     expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
     expect(document.getElementById('list').lastElementChild.className).toBe('hr-menu-section');
-    expect([...document.querySelectorAll('.hr-menu-item')].some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
-  });
-  it('filters by at least N negative stars, resets the Maps filter and closes the menu', () => {
-    const { escapes, anyClicks } = page();
-    const app = createApp(document, FAST);
-    app.scan();
-    const rows = document.querySelectorAll('.hr-menu-item');
-    // card 1: 4.0 on Google = 1 negative star, card 2: 2.0 on Google = 5 negative stars
-    rows[1].click();
-    const cards = document.querySelectorAll('[role="article"]');
-    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(true);
-    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
-    expect(anyClicks).toHaveBeenCalledTimes(1);
-    expect(escapes).toHaveBeenCalledTimes(1);
-    // our own click on "Any rating" must not leave the negative view
-    expect(html.hasAttribute('data-hr-negative')).toBe(true);
-    rows[4].click();
-    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
-    rows[0].click();
-    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
-    expect(html.hasAttribute('data-hr-negative')).toBe(true);
-  });
-  it('leaves the negative view when a Maps option is picked, and not for our own rows', () => {
-    page();
-    const app = createApp(document, FAST);
-    app.scan();
+    expect(rows()).toHaveLength(3);
+    expect([...rows()].some((row) => row.getAttribute('aria-checked') === 'true')).toBe(false);
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
-    document.querySelectorAll('.hr-menu-item')[0].click();
+  });
+  it('mirrors a negative row onto the Maps option (5 minus N), unselects Maps and closes the menu', () => {
+    const { escapes, clicks } = page();
+    createApp(document, FAST).scan();
+    rows()[0].click(); // 1 negative star = Google 4.0 or higher
+    expect(clicks[3]).toHaveBeenCalledTimes(1);
+    rows()[1].click(); // 2 negative stars = Google 3.0 or higher
+    expect(clicks[2]).toHaveBeenCalledTimes(1);
+    rows()[2].click(); // 3 negative stars = Google 2.0 or higher
+    expect(clicks[1]).toHaveBeenCalledTimes(1);
+    expect(clicks[0]).not.toHaveBeenCalled();
+    expect(escapes).toHaveBeenCalledTimes(3);
+    expect(html.hasAttribute('data-hr-negative')).toBe(true); // our own click on the Maps option keeps the view
+    expect(document.querySelectorAll('#list > [aria-checked="true"]')).toHaveLength(0);
+  });
+  it('still switches the view when Maps has no matching option', () => {
+    const { clicks } = page(anyRow + mapsRow('4.0 stars'));
+    createApp(document, FAST).scan();
+    rows()[1].click(); // 2 negative stars = 3.0, not in this menu
+    expect(html.hasAttribute('data-hr-negative')).toBe(true);
+    expect(Object.values(clicks).every((click) => click.mock.calls.length === 0)).toBe(true);
+  });
+  it('leaves the negative view when a Maps option is picked, but not for our own section', () => {
+    page();
+    createApp(document, FAST).scan();
+    rows()[0].click();
     expect(html.hasAttribute('data-hr-negative')).toBe(true);
     document.querySelector('.hr-menu-heading').click();
-    expect(html.hasAttribute('data-hr-negative')).toBe(true);
     document.querySelector('[aria-label="Rating"]').click();
     expect(html.hasAttribute('data-hr-negative')).toBe(true);
     document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
   });
-  it('turns a Maps rating option into an exact band instead of "or higher"', () => {
-    page();
-    const app = createApp(document, FAST, 0);
-    app.scan();
-    const cards = document.querySelectorAll('[role="article"]');
-    const items = document.querySelectorAll('#list > [role="menuitemradio"]');
-    items[1].click(); // "2.0 stars": 2.0 to 2.4
-    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(true); // 4.0 is above the band
-    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false); // 2.0 is inside
-    items[0].click(); // Any rating
-    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
-    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
-  });
-  it('keeps the places without a rating while a band is active', () => {
-    page();
-    document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', '<div role="article"><span>no rating</span></div>');
-    const app = createApp(document, FAST, 0);
-    app.scan();
-    document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
-    expect(document.querySelectorAll('[role="article"]')[2].hasAttribute('data-hr-filtered')).toBe(false);
-  });
-  describe('loading more results for a narrow filter', () => {
-    function feedWith(extra, label = '2.0 stars 100 Reviews') {
-      page();
-      const feed = document.querySelector('[role="feed"]');
-      Object.defineProperty(feed, 'scrollHeight', { value: 500, configurable: true });
-      const state = { loads: 0, resets: 0 };
-      Object.defineProperty(feed, 'scrollTop', {
-        configurable: true,
-        get: () => 0,
-        set(value) {
-          if (value === 0) state.resets += 1;
-          else {
-            state.loads += 1;
-            if (state.loads <= extra) feed.insertAdjacentHTML('beforeend', card(label));
-          }
-        },
-      });
-      return state;
-    }
-    it('scrolls until enough places match or nothing new arrives, then scrolls back', async () => {
-      const state = feedWith(2);
-      const app = createApp(document, FAST, 0);
-      app.scan();
-      const rows = document.querySelectorAll('.hr-menu-item');
-      rows[1].click();
-      rows[2].click(); // a second request while the first is still loading is ignored
-      await vi.waitFor(() => expect(state.resets).toBe(1));
-      expect(state.loads).toBe(3);
-      expect(document.querySelectorAll('[role="article"]:not([data-hr-filtered])')).toHaveLength(3);
-    });
-    it('stops at once when enough places already match', async () => {
-      const state = feedWith(0);
-      document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', card('2.0 stars 100 Reviews').repeat(8));
-      const app = createApp(document, FAST, 0);
-      app.scan();
-      document.querySelectorAll('.hr-menu-item')[1].click();
-      await vi.waitFor(() => expect(state.resets).toBe(1));
-      expect(state.loads).toBe(0);
-    });
-    it('gives up after the maximum number of loads', async () => {
-      const state = feedWith(Infinity, '4.0 stars 1,000 Reviews');
-      createApp(document, FAST, 0).scan();
-      document.querySelectorAll('.hr-menu-item')[4].click();
-      await vi.waitFor(() => expect(state.resets).toBe(1));
-      expect(state.loads).toBe(10);
-    });
-    it('does nothing without a feed or without an active filter', () => {
-      page();
-      document.querySelector('[role="feed"]').remove();
-      const app = createApp(document, FAST, 0);
-      app.scan();
-      document.querySelectorAll('.hr-menu-item')[1].click();
-      expect(document.querySelectorAll('[role="article"]')).toHaveLength(0);
-    });
-  });
-  it('shows no Maps option as selected while the negative view is active, and watches a menu once', () => {
+  it('adds the section again when Maps rebuilds the rows, remembering the pick and unselecting Maps', () => {
     page();
     const app = createApp(document, FAST);
     app.scan();
-    document.querySelectorAll('.hr-menu-item')[2].click();
-    expect(document.querySelectorAll('#list > [aria-checked="true"]')).toHaveLength(0);
-    document.getElementById('list').innerHTML = '<div role="menuitemradio" aria-checked="true"><div>Any rating</div></div><div role="menuitemradio" aria-checked="true"><span aria-label="2.0 stars"></span></div>';
-    app.enhanceMenus();
-    const mapsItems = [...document.querySelectorAll('#list > [role="menuitemradio"]')];
-    expect(mapsItems.map((item) => item.getAttribute('aria-checked'))).toEqual(['false', 'false']);
-    expect(document.querySelectorAll('.hr-menu-item')[2].getAttribute('aria-checked')).toBe('true');
-    mapsItems[0].click();
-    expect(html.hasAttribute('data-hr-negative')).toBe(false);
-  });
-  it('adds the section again when Maps rebuilds the rows and remembers the pick', () => {
-    page();
-    const app = createApp(document, FAST);
-    app.scan();
-    document.querySelectorAll('.hr-menu-item')[1].click();
-    document.getElementById('list').innerHTML = '<div role="menuitemradio"><span aria-label="2.0 stars"></span></div>';
+    rows()[0].click(); // 1 negative star
+    document.getElementById('list').innerHTML = mapsRow('4.0 stars', true) + mapsRow('3.0 stars', true);
     expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(0);
     app.enhanceMenus();
     expect(document.querySelectorAll('.hr-menu-section')).toHaveLength(1);
-    expect(document.querySelectorAll('.hr-menu-item')[1].getAttribute('aria-checked')).toBe('true');
+    expect(rows()[0].getAttribute('aria-checked')).toBe('true');
+    expect(document.querySelectorAll('#list > [aria-checked="true"]')).toHaveLength(0);
+    document.querySelectorAll('#list > [role="menuitemradio"]')[0].click();
+    expect(html.hasAttribute('data-hr-negative')).toBe(false);
   });
   it('ignores menus without star rows', () => {
     document.body.innerHTML = '<div role="menu" aria-label="Empty"></div><div role="menu"><div role="menuitemradio"><span aria-label="x"></span></div></div>';

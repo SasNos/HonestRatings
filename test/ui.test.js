@@ -30,14 +30,15 @@ describe('rating menu section', () => {
     const section = enhanceRatingMenu(list, current, onPick);
     return { list, section, onPick, rows: [...section.querySelectorAll('[role="menuitemradio"]')] };
   }
-  it('appends a Negative heading and five rows of purple stars, marking the current one', () => {
-    const { list, section, rows } = mount(3);
+  it('appends a Negative heading and three rows mirroring Google 4.0+, 3.0+ and 2.0+', () => {
+    const { list, section, rows } = mount(2);
     expect(list.contains(section)).toBe(true);
     expect(section.textContent).toContain('Negative');
-    expect(rows).toHaveLength(5);
-    expect(rows.map((row) => row.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true', 'false', 'false']);
-    expect(rows[0].getAttribute('aria-label')).toBe('At least 1 negative star');
-    expect(rows[4].getAttribute('aria-label')).toBe('At least 5 negative stars');
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false']);
+    expect(rows[0].getAttribute('aria-label')).toBe('1 negative star: Google rating 4.0 or higher');
+    expect(rows[1].getAttribute('aria-label')).toBe('2 negative stars: Google rating 3.0 or higher');
+    expect(rows[2].title).toBe('3 negative stars: Google rating 2.0 or higher');
     expect(rows[1].querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
   });
   it('marks no row when the Maps view is active', () => {
@@ -51,8 +52,8 @@ describe('rating menu section', () => {
     expect(onPick).toHaveBeenCalledTimes(1);
     rows[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(onPick).toHaveBeenLastCalledWith(3);
-    rows[3].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-    expect(onPick).toHaveBeenLastCalledWith(4);
+    rows[0].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(onPick).toHaveBeenLastCalledWith(1);
   });
 });
 
