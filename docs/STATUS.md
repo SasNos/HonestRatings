@@ -1,5 +1,9 @@
 # Status
 
+## Worst first in the negative view, 17 October 2026
+
+User: only places with 1 negative star showed up (the Maps list is mostly 4.0 and better), asked for "worst first". `orderFeed()` in `src/app.js` gives the children of `[role=feed]` a CSS `order` while the negative view is active: places by negative stars descending, then Google rating ascending; places without a rating after the rated ones; header children (before the first place) on top; children with text after a place (footer) at the end; textless children after a place (dividers) travel with it. Leaving the negative view removes the inline order. Checked live (signed out): the feed is a flex column and reversed `order` values really reorder its cards. This only sorts what Maps has loaded: if the list holds only good places, 2 or 3 negative stars still have little to show; the Maps option 3.0+ or 2.0+ (the mirrored rows) controls what Maps lists at all.
+
 ## Negative rows mirror the Maps options, 17 October 2026
 
 The logic was rebuilt on the user's definition: the positive Maps options stay as they are (Google default, "or higher", 0.5 steps); the negative rows are aliases of them. 1 negative star = 4.0 or higher, 2 = 3.0 or higher, 3 = 2.0 or higher; there is no 4 or 5 (they would be 1.0+ and 0.0+). Picking a row clicks the matching Maps option (rating = 5 minus N, found by its star label, so it works in any language), marks no Maps option selected, closes the menu with Escape and switches the list to the purple negative view. Any Maps pick leaves the negative view. The client-side filtering, the exact bands and the automatic loading of more results from the previous entry are removed (Maps now filters itself). The negative stars shown in the list are still computed from the bad-review share and are not changed by the filter. Half steps for the negative rows were tried and dropped on the user's request.

@@ -31,6 +31,7 @@
 .hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
 [data-hr-negative] [data-hr-hidden] { display: none !important; }
 [data-hr-negative] .hr-badge { display: inline-flex; }
+[data-hr-negative] [role="feed"] { display: flex; flex-direction: column; }
 
 /* "Negative" section inside the original Maps rating menu (same 32px rows, 16px padding). */
 .hr-menu-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hr-outline); }

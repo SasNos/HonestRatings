@@ -7,6 +7,12 @@ import { enhanceRatingMenu, SECTION_CLASS } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
+// CSS order values for the negative view: headers first, then the places worst
+// first, then places without a rating, then footers.
+const ORDER_HEADER = 0;
+const ORDER_RATED_BASE = 100000;
+const ORDER_UNRATED = 150000;
+const ORDER_FOOTER = 200000;
 
 function ratingOf(scope) {
   for (const image of scope.querySelectorAll(SEL.ratingImage)) {
@@ -47,8 +53,33 @@ export function createApp(doc = document, collectOptions = {}) {
         badge = renderBadge(summary);
         badge.dataset.hrSource = label;
         badge.dataset.hrStars = String(summary.stars);
+        badge.dataset.hrAverage = String(found.rating.average);
         found.image.after(badge);
       }
+    }
+    orderFeed();
+  }
+
+  // The negative view lists the worst places first. Maps has no sort for the list, so
+  // the children of the feed get a CSS order (the DOM stays as Maps built it).
+  // Textless children after a place (dividers) travel with that place.
+  function orderFeed() {
+    const feed = doc.querySelector(SEL.feed);
+    if (!feed) return;
+    let order = ORDER_HEADER;
+    let seenPlace = false;
+    for (const child of feed.children) {
+      const place = child.getAttribute('role') === 'article' ? child : child.querySelector('[role="article"]');
+      if (place) {
+        const badge = place.querySelector(`[${BADGE_ATTR}]`);
+        const key = badge ? Number(badge.dataset.hrStars) * 1000 + Math.round((5 - Number(badge.dataset.hrAverage)) * 100) : null;
+        order = key === null ? ORDER_UNRATED : ORDER_RATED_BASE - key;
+        seenPlace = true;
+      } else if (seenPlace && child.textContent.trim()) {
+        order = ORDER_FOOTER;
+      }
+      if (negative > 0) child.style.order = String(order);
+      else child.style.removeProperty('order');
     }
   }
 

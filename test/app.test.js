@@ -151,6 +151,44 @@ describe('rating menu', () => {
     document.querySelectorAll('#list > [role="menuitemradio"]')[0].click();
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
   });
+  describe('worst-first order in the negative view', () => {
+    const place = (name, label) => `<div data-name="${name}"><div role="article"><span role="img" aria-label="${label}"></span></div></div><div data-name="${name}-divider"></div>`;
+    function feedPage() {
+      page();
+      document.querySelector('[role="feed"]').innerHTML =
+        '<div data-name="header">Results</div>' +
+        place('A', '4.0 stars 100 Reviews') +
+        place('B', '2.0 stars 100 Reviews') +
+        place('C', '3.5 stars 100 Reviews') +
+        place('C2', '3.0 stars 100 Reviews') +
+        place('C3', '3.2 stars 100 Reviews') +
+        '<div data-name="plain"><div role="article"><span>no rating</span></div></div>' +
+        '<div role="article" data-name="direct"><span role="img" aria-label="4.5 stars 10 Reviews"></span></div>' +
+        '<div data-name="footer">You are seeing a limited view</div><div data-name="footer-tail"></div>';
+    }
+    const sequence = () => [...document.querySelector('[role="feed"]').children]
+      .map((child, index) => ({ name: child.dataset.name, order: Number(child.style.order), index }))
+      .sort((x, y) => x.order - y.order || x.index - y.index)
+      .map((entry) => entry.name);
+
+    it('puts the worst places first, keeps dividers with their place, headers on top and footers at the end', () => {
+      feedPage();
+      const app = createApp(document, FAST);
+      app.scan();
+      expect(sequence()).toEqual(['header', 'A', 'A-divider', 'B', 'B-divider', 'C', 'C-divider', 'C2', 'C2-divider', 'C3', 'C3-divider', 'plain', 'direct', 'footer', 'footer-tail']);
+      rows()[2].click();
+      // 2.0 = 5 negative stars, 3.0 and 3.2 = 4 and 3-4, 3.5 = 3, 4.0 = 1, 4.5 = 1; unrated after rated
+      expect(sequence()).toEqual(['header', 'B', 'B-divider', 'C2', 'C2-divider', 'C3', 'C3-divider', 'C', 'C-divider', 'A', 'A-divider', 'direct', 'plain', 'footer', 'footer-tail']);
+    });
+    it('removes the order again when the negative view is left', () => {
+      feedPage();
+      createApp(document, FAST).scan();
+      rows()[0].click();
+      expect(document.querySelector('[data-name="B"]').style.order).not.toBe('');
+      document.querySelectorAll('#list > [role="menuitemradio"]')[0].click();
+      expect([...document.querySelector('[role="feed"]').children].every((child) => child.style.order === '')).toBe(true);
+    });
+  });
   it('ignores menus without star rows', () => {
     document.body.innerHTML = '<div role="menu" aria-label="Empty"></div><div role="menu"><div role="menuitemradio"><span aria-label="x"></span></div></div>';
     createApp(document, FAST).scan();
