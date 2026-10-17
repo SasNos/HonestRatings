@@ -19,14 +19,15 @@ function ratingOf(scope) {
 }
 
 export function createApp(doc = document, collectOptions = {}) {
-  let maxStars = 5;
+  // A place stays in the list with at least this many negative stars (1 = all).
+  let minStars = 1;
   let place = null;
   let run = 0;
   const cache = new Map();
 
   function decorateCards() {
     // The list stays the original Maps one until a negative filter is chosen.
-    doc.documentElement.toggleAttribute('data-hr-negative', maxStars < 5);
+    doc.documentElement.toggleAttribute('data-hr-negative', minStars > 1);
     for (const card of doc.querySelectorAll(SEL.card)) {
       const found = ratingOf(card);
       const label = found?.image.getAttribute('aria-label');
@@ -44,12 +45,12 @@ export function createApp(doc = document, collectOptions = {}) {
         badge.dataset.hrStars = String(summary.stars);
         found.image.after(badge);
       }
-      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) > maxStars);
+      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) < minStars);
     }
   }
 
-  function pick(max, menu) {
-    maxStars = max;
+  function pick(min, menu) {
+    minStars = min;
     decorateCards();
     // Escape on the menu is what closes a Maps menu reliably.
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
@@ -63,7 +64,7 @@ export function createApp(doc = document, collectOptions = {}) {
       const starred = items.find((item) => parseRatingLabel(item.querySelector('[aria-label]')?.getAttribute('aria-label')));
       // Maps keeps the menu element and rebuilds its rows, so look for our section, not a flag.
       if (!starred || menu.querySelector(`.${SECTION_CLASS}`)) continue;
-      enhanceRatingMenu(starred.parentElement, maxStars, (max) => pick(max, menu));
+      enhanceRatingMenu(starred.parentElement, minStars, (min) => pick(min, menu));
     }
   }
 

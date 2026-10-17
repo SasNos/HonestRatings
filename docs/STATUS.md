@@ -1,5 +1,9 @@
 # Status
 
+## Filter direction reversed, 17 October 2026
+
+Picking N negative stars now keeps the places with at least N negative stars (before: at most N). 1 is the neutral row (everything stays), 5 shows only the worst places, which is roughly the same as filtering Google ratings of 5 minus N or lower. The neutral value moved from 5 to 1, so the negative list view is active for N above 1.
+
 ## Menu rows vanished, list stays Maps until filtered, 17 October 2026
 
 After picking a negative star row the "Negative" section was gone when the menu was opened again: Maps keeps the `role=menu` element and rebuilds the rows inside it, but the menu was flagged as done. The section is now looked up by its class and added again whenever it is missing. The result list shows the original Google Maps ratings until a negative filter below 5 is picked; only then (`data-hr-negative` on the html element) the purple negative badges replace them, so both the Maps rating filter and the negative filter can be used. The place overlay is unchanged. Not re-checked live (needs a full extension run).

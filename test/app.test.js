@@ -100,13 +100,16 @@ describe('rating menu', () => {
     const app = createApp(document, FAST);
     app.scan();
     const rows = document.querySelectorAll('.hr-menu-item');
-    rows[0].click();
+    // card 1: 4.0 on Google = 1 negative star, card 2: 2.0 on Google = 5 negative stars
+    rows[1].click();
     const cards = document.querySelectorAll('[role="article"]');
-    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
-    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(true);
+    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(true);
+    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
     expect(escapes).toHaveBeenCalledTimes(1);
     rows[4].click();
     expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
+    rows[0].click();
+    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
   });
   it('shows the negative view only while a negative filter is active', () => {
     page();
@@ -115,7 +118,7 @@ describe('rating menu', () => {
     expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
     document.querySelectorAll('.hr-menu-item')[1].click();
     expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(true);
-    document.querySelectorAll('.hr-menu-item')[4].click();
+    document.querySelectorAll('.hr-menu-item')[0].click();
     expect(document.documentElement.hasAttribute('data-hr-negative')).toBe(false);
   });
   it('adds the section again when Maps rebuilds the rows inside the same menu element', () => {
