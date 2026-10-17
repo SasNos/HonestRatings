@@ -17,13 +17,22 @@ function paragraph(className, text) {
   return p;
 }
 
+function formatPercent(share) {
+  const percent = share * 100;
+  return percent < 10 ? percent.toFixed(1).replace(/\.0$/, '') : String(Math.round(percent));
+}
+
+// "20% (200 / 1,000)", with "~" in front of every estimated number.
 function summaryRow(summary) {
   const row = document.createElement('div');
   row.className = 'hr-overlay__summary';
-  const note = summary.exact
-    ? `${summary.bad.toLocaleString('en-US')} of ${summary.total.toLocaleString('en-US')} reviews are 1-2 stars`
-    : 'Estimated from the average rating';
-  row.append(renderStars(summary.stars), paragraph('hr-overlay__note', note));
+  const tilde = summary.exact ? '' : '~';
+  let text = `${tilde}${formatPercent(summary.share)}%`;
+  if (summary.bad !== null) text += ` (${tilde}${summary.bad.toLocaleString('en-US')} / ${summary.total.toLocaleString('en-US')})`;
+  const figures = document.createElement('div');
+  figures.append(paragraph('hr-overlay__figure', text));
+  if (summary.average !== null) figures.append(paragraph('hr-overlay__note', `Google rating ${summary.average.toFixed(1)}`));
+  row.append(renderStars(summary.stars), figures);
   return row;
 }
 

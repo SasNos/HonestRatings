@@ -79,21 +79,24 @@ describe('chip', () => {
 describe('overlay', () => {
   const reviews = [{ author: 'Ann', stars: 1, text: 'Cold food' }, { author: '', stars: 2, text: 'Rude' }];
   it('shows the summary and the reviews and can be closed', () => {
-    const panel = showOverlay({ title: 'Cafe', summary: { stars: 2, bad: 5, total: 50, exact: true }, reviews });
-    expect(panel.textContent).toContain('5 of 50 reviews are 1-2 stars');
+    const panel = showOverlay({ title: 'Cafe', summary: { stars: 2, share: 0.1, bad: 5, total: 50, exact: true, average: 4.25 }, reviews });
+    expect(panel.textContent).toContain('10% (5 / 50)');
+    expect(panel.textContent).toContain('Google rating 4.3');
     expect(panel.querySelectorAll('.hr-review')).toHaveLength(2);
     expect(panel.textContent).toContain('Anonymous');
     panel.querySelector('.hr-overlay__close').click();
     expect(document.getElementById('hr-overlay')).toBeNull();
   });
   it('handles estimates, missing summaries, empty lists and loading', () => {
-    expect(showOverlay({ title: 'A', summary: { stars: 1, exact: false }, reviews: [] }).textContent).toContain('Estimated from the average rating');
+    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.08, bad: 80, total: 1000, exact: false, average: null }, reviews: [] }).textContent).toContain('~8% (~80 / 1,000)');
+    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.025, bad: null, total: null, exact: false, average: 4.5 }, reviews: [] }).textContent).toContain('~2.5%Google rating 4.5');
+    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.05, bad: 5, total: 100, exact: true, average: null }, reviews: [] }).textContent).toContain('5% (5 / 100)');
     expect(showOverlay({ title: 'A', summary: null, reviews: [] }).textContent).toContain('No bad reviews with text found.');
     expect(showOverlay({ title: 'A', loading: true }).textContent).toContain('Loading');
   });
   it('shows a summary while loading', () => {
-    const panel = showOverlay({ title: 'A', summary: { stars: 1, bad: 1, total: 20, exact: true }, loading: true });
-    expect(panel.textContent).toContain('1 of 20');
+    const panel = showOverlay({ title: 'A', summary: { stars: 1, share: 0.05, bad: 1, total: 20, exact: true, average: null }, loading: true });
+    expect(panel.textContent).toContain('5% (1 / 20)');
     expect(panel.textContent).toContain('Loading');
   });
   it('explains what it found when no reviews were read, but not when signed out', () => {

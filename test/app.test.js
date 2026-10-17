@@ -131,7 +131,8 @@ describe('place overlay', () => {
     const app = createApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Loading');
-    expect(overlayText()).toContain('of');
+    expect(overlayText()).toContain('25% (40 / 160)');
+    expect(overlayText()).toContain('Google rating 4.0');
     expect(document.documentElement.classList.contains('hr-collecting')).toBe(true);
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
     expect(document.documentElement.classList.contains('hr-collecting')).toBe(false);

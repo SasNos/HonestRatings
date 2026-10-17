@@ -19,7 +19,9 @@ export function parseRatingLabel(label) {
 // The star number is found by position, so the word order of the language
 // ("1.046 Rezensionen mit 5 Sternen") does not matter.
 export function parseHistogram(root) {
+  // Our own stars ("5 of 5 negative stars") look like histogram rows: skip them.
   const rows = [...root.querySelectorAll(SEL.histogramRow)]
+    .filter((row) => !row.classList.contains('hr-stars'))
     .map((row) => (row.getAttribute('aria-label').match(NUMBER) || []).slice(0, 2).map(toInt))
     .filter((numbers) => numbers.length === 2);
   for (let start = 0; start + 5 <= rows.length; start += 1) {

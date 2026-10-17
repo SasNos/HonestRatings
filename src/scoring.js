@@ -42,7 +42,7 @@ export function estimateBadShare(average) {
   return lowShare + t * (highShare - lowShare);
 }
 
-// Returns { stars, bad, total, exact } or null when nothing can be said.
+// Returns { stars, share, bad, total, exact, average } or null when nothing can be said.
 // With a histogram the numbers are exact; with only an average they are an
 // estimate (exact: false) and `bad` is null when the review total is unknown.
 export function summarize({ histogram, average, total }) {
@@ -50,13 +50,15 @@ export function summarize({ histogram, average, total }) {
     const sum = totalCount(histogram);
     if (sum > 0) {
       const bad = badCount(histogram);
-      return { stars: negativeStars(bad / sum), bad, total: sum, exact: true };
+      return { stars: negativeStars(bad / sum), share: bad / sum, bad, total: sum, exact: true, average: average ?? null };
     }
   }
   if (average == null) return null;
   const share = estimateBadShare(average);
   return {
     stars: negativeStars(share),
+    share,
+    average,
     bad: total == null ? null : Math.round(share * total),
     total: total ?? null,
     exact: false,

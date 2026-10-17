@@ -32,6 +32,10 @@ describe('parseHistogram', () => {
     const root = html([5, 4, 3, 2, 1].map((s) => row(`${s * 100 + 7} Rezensionen mit ${s} Sternen`)).join(''));
     expect(parseHistogram(root)).toEqual({ 1: 107, 2: 207, 3: 307, 4: 407, 5: 507 });
   });
+  it('never reads its own stars as a histogram', () => {
+    const own = [5, 4, 3, 2, 1].map((s) => `<span class="hr-stars" role="img" aria-label="${s} of 5 negative stars"></span>`).join('');
+    expect(parseHistogram(html(own))).toBeNull();
+  });
   it('accepts equal star and count numbers', () => {
     const root = html([5, 4, 3, 2, 1].map((s) => row(`${s} stars, ${s} reviews`)).join(''));
     expect(parseHistogram(root)).toEqual({ 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 });
