@@ -1,5 +1,12 @@
 # Status
 
+## Stuck stars and "no bad reviews", 17 October 2026
+
+User test: stars sometimes jumped to 5 after the map moved, and the overlay always said there were no bad reviews with text.
+
+- Stars: the parser read the extension's own label ("2 of 5 negative stars") as a rating once Maps rebuilt a card. Own stars are now skipped, and a badge is rebuilt when Maps reuses a card for another place.
+- Reviews: cause not yet known (needs a signed-in Maps session). Changes made blind: sort menu and option are pressed with the whole pointer sequence, the collector waits until the list actually changes after sorting, and the review text has a fallback when Maps renames its text class. When no review is read, the overlay shows a grey debug line (sort button found/missing, menu items, review elements); that line tells where it breaks. Remove it once the reviews work.
+
 ## Flicker fix, 17 October 2026
 
 User test showed the panel jumping to the reviews and the overlay flickering on and off. Cause: the place was identified by the `h1`, which changes while the collector switches tabs, so every switch restarted the collection. Now the place comes from the URL path (`/maps/place/<name>`), results are cached per place, the exact numbers show at once from the overview histogram, the panel is faded out (`hr-collecting`) while tabs switch, and the scroll position is restored. 57 tests, 100 % coverage. Not yet re-tested in a real signed-in Chrome.

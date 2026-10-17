@@ -32,6 +32,27 @@ describe('result cards', () => {
     expect(badges[0].textContent).toBe('~80 bad');
     expect(document.querySelectorAll('[data-hr-hidden]')).toHaveLength(2);
   });
+  it('never mistakes its own stars for a rating, even when Maps removes the original', () => {
+    results(card());
+    const app = createApp(document, FAST);
+    app.scan();
+    document.querySelector('[data-hr-hidden]').remove();
+    app.scan();
+    expect(document.querySelector('[role="article"]').hasAttribute('data-hr-filtered')).toBe(false);
+    expect(document.querySelector('[data-hr-badge]').dataset.hrStars).toBe('1');
+  });
+  it('rebuilds the badge when Maps reuses a card for another place', () => {
+    results(card());
+    const app = createApp(document, FAST);
+    app.scan();
+    const rating = document.querySelector('[data-hr-hidden]');
+    rating.setAttribute('aria-label', '2.5 stars 100 Reviews');
+    app.scan();
+    expect(document.querySelectorAll('[data-hr-badge]')).toHaveLength(1);
+    expect(document.querySelector('[data-hr-badge]').dataset.hrStars).toBe('5');
+    app.scan();
+    expect(document.querySelectorAll('[data-hr-badge]')).toHaveLength(1);
+  });
   it('places the chip after the rating chip and filters by negative stars', () => {
     results(card(), card('2.0 stars 100 Reviews'));
     createApp(document, FAST).scan();

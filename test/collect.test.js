@@ -80,6 +80,30 @@ describe('collect', () => {
     delete document.body.scrollHeight;
     delete document.body.clientHeight;
   });
+  it('reports debug numbers and presses the whole pointer sequence', async () => {
+    const seen = [];
+    panel();
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      document.getElementById('area').addEventListener('mousedown', (event) => seen.push(event.target.getAttribute('data-value') || event.target.getAttribute('role')));
+    });
+    const result = await collect(document, FAST);
+    expect(seen).toEqual(['Sort', 'menuitemradio']);
+    expect(result.debug).toEqual({ sort: true, options: 4, reviewElements: 1 });
+  });
+  it('waits until the list changes after choosing the sort order', async () => {
+    panel();
+    document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="old"><span role="img" aria-label="5 stars"></span><span class="wiI7pd">Great</span></div>');
+      setTimeout(() => {
+        document.querySelector('[data-review-id="old"]')?.setAttribute('data-review-id', 'new');
+      }, 0);
+    });
+    document.body.addEventListener('click', (event) => {
+      if (event.target.id === 'o3') document.querySelector('[data-review-id="old"], [data-review-id="new"]')?.setAttribute('data-review-id', 'new2');
+    });
+    const result = await collect(document, FAST);
+    expect(result.reviews.map((r) => r.text)).toContain('Great');
+  });
   it('uses default options', async () => {
     panel();
     Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });

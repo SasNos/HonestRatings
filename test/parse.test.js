@@ -46,6 +46,11 @@ describe('reviews', () => {
     expect(parseReview(html('<div><span role="img" aria-label="stars"></span></div>').firstChild).stars).toBeNull();
     expect(parseReview(html('<div><span role="img" aria-label=""></span></div>').firstChild).stars).toBeNull();
   });
+  it('falls back to the longest plain text when the text class is gone', () => {
+    const element = html('<div><button>A very long button label that must not count</button><span>short</span><span>The staff ignored us for an hour.</span><div>Shorter sentence here.</div></div>').firstChild;
+    expect(parseReview(element).text).toBe('The staff ignored us for an hour.');
+    expect(parseReview(html('<div><span>short</span></div>').firstChild).text).toBe('');
+  });
   it('picks the worst reviews that have text', () => {
     const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + '<div data-review-id="y"></div>');
     expect(worstReviews(root).map((r) => r.text)).toEqual(['a', 'd', 'b']);

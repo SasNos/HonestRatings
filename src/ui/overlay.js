@@ -36,7 +36,7 @@ function reviewCard(review) {
 }
 
 // Top-right panel with the worst reviews of the open place.
-export function showOverlay({ title, summary, reviews, loading = false, signedOut = false }) {
+export function showOverlay({ title, summary, reviews, loading = false, signedOut = false, debug = null }) {
   removeOverlay();
   const panel = document.createElement('aside');
   panel.id = ID;
@@ -63,6 +63,10 @@ export function showOverlay({ title, summary, reviews, loading = false, signedOu
     if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the worst reviews.'));
     else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No bad reviews with text found.'));
     for (const review of reviews) panel.append(reviewCard(review));
+    if (debug && reviews.length === 0 && !signedOut) {
+      const found = (flag) => (flag ? 'found' : 'missing');
+      panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements`));
+    }
   }
   document.body.append(panel);
   return panel;

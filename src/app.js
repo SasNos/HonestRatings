@@ -10,6 +10,8 @@ const SCAN_DELAY = 200;
 
 function ratingOf(scope) {
   for (const image of scope.querySelectorAll(SEL.ratingImage)) {
+    // Our own stars carry labels like "2 of 5 negative stars"; they are not a rating.
+    if (image.classList.contains('hr-stars')) continue;
     const rating = parseRatingLabel(image.getAttribute('aria-label'));
     if (rating) return { image, rating };
   }
@@ -30,13 +32,22 @@ export function createApp(doc = document, collectOptions = {}) {
   function decorateCards() {
     for (const card of doc.querySelectorAll(SEL.card)) {
       const found = ratingOf(card);
-      if (found && !card.querySelector(`[${BADGE_ATTR}]`)) {
+      const label = found?.image.getAttribute('aria-label');
+      let badge = card.querySelector(`[${BADGE_ATTR}]`);
+      // Maps reuses card elements for other places when the list refreshes.
+      if (badge && found && badge.dataset.hrSource !== label) {
+        badge.remove();
+        badge = null;
+      }
+      if (found && !badge) {
         const summary = summarize({ average: found.rating.average, total: found.rating.total });
         found.image.setAttribute('data-hr-hidden', '');
-        found.image.after(renderBadge(summary));
-        card.dataset.hrStars = String(summary.stars);
+        badge = renderBadge(summary);
+        badge.dataset.hrSource = label;
+        badge.dataset.hrStars = String(summary.stars);
+        found.image.after(badge);
       }
-      card.toggleAttribute('data-hr-filtered', Number(card.dataset.hrStars) > maxStars);
+      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) > maxStars);
     }
   }
 
@@ -84,7 +95,7 @@ export function createApp(doc = document, collectOptions = {}) {
       doc.documentElement.classList.remove('hr-collecting');
     }
     if (mine !== run) return;
-    const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut };
+    const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut, debug: data?.debug };
     cache.set(key, result);
     showOverlay({ title, ...result });
   }

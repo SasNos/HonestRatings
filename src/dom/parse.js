@@ -30,10 +30,19 @@ export function parseHistogram(root) {
   return rows >= 3 ? histogram : null;
 }
 
+// Fallback when Maps renames the text class: the longest plain text outside buttons.
+function longestText(element) {
+  const texts = [...element.querySelectorAll('span, div')]
+    .filter((node) => !node.children.length && !node.closest('button'))
+    .map((node) => node.textContent.trim())
+    .filter((text) => text.length >= 20);
+  return texts.sort((a, b) => b.length - a.length)[0] || '';
+}
+
 export function parseReview(element) {
   const star = element.querySelector(SEL.ratingImage);
   const stars = star ? parseInt((star.getAttribute('aria-label') || '').match(/\d/)?.[0], 10) : NaN;
-  const text = element.querySelector(SEL.reviewText)?.textContent.trim() || '';
+  const text = element.querySelector(SEL.reviewText)?.textContent.trim() || longestText(element);
   const author = element.querySelector(SEL.reviewAuthor)?.textContent.trim() || '';
   return { author, stars: Number.isNaN(stars) ? null : stars, text };
 }

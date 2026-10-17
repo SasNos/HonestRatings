@@ -90,6 +90,13 @@ describe('overlay', () => {
     expect(panel.textContent).toContain('1 of 20');
     expect(panel.textContent).toContain('Loading');
   });
+  it('explains what it found when no reviews were read, but not when signed out', () => {
+    const debug = { sort: true, options: 4, reviewElements: 0 };
+    expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain('Debug: sort button found, 4 menu items, 0 review elements');
+    expect(showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false } }).textContent).toContain('sort button missing');
+    expect(showOverlay({ title: 'A', reviews: [], debug, signedOut: true }).textContent).not.toContain('Debug');
+    expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }], debug }).textContent).not.toContain('Debug');
+  });
   it('asks to sign in when signed out', () => {
     expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');
   });
