@@ -8,7 +8,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-function panel({ sort = true, options = true, withTabs = true } = {}) {
+function panel({ sort = true, options = true, withTabs = true, ones = 1, histogram = true } = {}) {
   const tab = (label, selected) => `<button role="tab" aria-label="${label}" aria-selected="${selected}"></button>`;
   document.body.innerHTML = `${withTabs ? tab('Overview', true) + tab('Reviews', false) : tab('About', true)}<div id="area"></div>`;
   const area = document.getElementById('area');
@@ -16,7 +16,7 @@ function panel({ sort = true, options = true, withTabs = true } = {}) {
   const clicks = [];
   reviews?.addEventListener('click', () => {
     clicks.push('reviews');
-    area.innerHTML = [5, 4, 3, 2, 1].map((s) => `<div role="img" aria-label="${s} stars, ${s} reviews"></div>`).join('');
+    area.innerHTML = (histogram ? [5, 4, 3, 2, 1] : []).map((s) => `<div role="img" aria-label="${s} stars, ${s === 1 ? ones : s} reviews"></div>`).join('');
     if (sort) {
       area.insertAdjacentHTML('beforeend', '<button data-value="Sort"></button>');
       area.querySelector('button').addEventListener('click', () => {
@@ -73,8 +73,8 @@ describe('findSort', () => {
 });
 
 describe('loading more reviews', () => {
-  function scrollingPanel(onLoad) {
-    panel();
+  function scrollingPanel(onLoad, panelOptions = {}) {
+    panel(panelOptions);
     Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
     Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
     const state = { loads: 0 };
@@ -105,14 +105,36 @@ describe('loading more reviews', () => {
     expect(state.loads).toBe(2);
     expect(result.reviews.map((r) => r.text)).toEqual(['Bad', 'Second']);
   });
-  it('stops when nothing new arrives', async () => {
+  it('stops after two scrolls in a row that bring nothing new', async () => {
     const state = scrollingPanel(() => {});
     const result = await collect(document, FAST);
-    expect(state.loads).toBe(1);
+    expect(state.loads).toBe(2);
     expect(result.reviews.map((r) => r.text)).toEqual(['Bad']);
   });
+  it('works without a readable histogram: it keeps loading until a review above the bad ones shows up', async () => {
+    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`h${count}`, count === 1 ? 2 : 5, `Review ${count}`)), { histogram: false });
+    const result = await collect(document, FAST);
+    expect(state.loads).toBe(2);
+    expect(result.histogram).toBeNull();
+    expect(result.reviews.map((r) => r.text)).toEqual(['Bad', 'Review 1']);
+  });
+  it('does not give up after one slow load', async () => {
+    const state = scrollingPanel((count, area) => {
+      if (count === 2) area.insertAdjacentHTML('beforeend', review('slow', 2, 'Late page'));
+    });
+    const result = await collect(document, FAST);
+    expect(result.reviews.map((r) => r.text)).toEqual(['Bad', 'Late page']);
+    expect(state.loads).toBeGreaterThanOrEqual(4); // one miss, one hit, two misses
+  });
+  it('stops once all negative reviews of the histogram are loaded', async () => {
+    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`n${count}`, 1, `Next ${count}`)));
+    const result = await collect(document, FAST);
+    // the histogram of the fixture counts 1 + 2 = 3 negative reviews: one is on the page, two are loaded
+    expect(state.loads).toBe(2);
+    expect(result.reviews).toHaveLength(3);
+  });
   it('gives up after the maximum number of loads', async () => {
-    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)));
+    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)), { ones: 1000 });
     const result = await collect(document, FAST);
     expect(state.loads).toBe(30);
     expect(result.reviews).toHaveLength(31);
@@ -123,7 +145,7 @@ describe('loading more reviews', () => {
     document.querySelectorAll('button[role="tab"]')[1].replaceWith(document.querySelectorAll('button[role="tab"]')[1].cloneNode(true));
     const result = await collect(document, FAST);
     expect(result.reviews).toEqual([]);
-    expect(state.loads).toBe(1);
+    expect(state.loads).toBe(2);
   });
   it('does not scroll when there is no scrollable panel', async () => {
     panel();
@@ -258,7 +280,7 @@ describe('collect', () => {
     expect((await collect(document)).reviews).toHaveLength(1);
     delete document.body.scrollHeight;
     delete document.body.clientHeight;
-  });
+  }, 20000);
   it('returns no reviews when the sort button or the menu is missing', async () => {
     panel({ sort: false });
     expect((await collect(document, FAST)).reviews).toEqual([]);

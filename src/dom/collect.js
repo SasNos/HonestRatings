@@ -66,14 +66,23 @@ async function sortLowest(doc, sort, options) {
 
 // Scrolls the review list to load more until done() is true, nothing new arrives,
 // or the load limit is hit. onLoad() runs after every successful load.
+// Maps can take a few seconds per page, so a load gets time, and only two misses in a
+// row end the loop (the second try scrolls up a little first to trigger the loader again).
 async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {} }) {
+  let misses = 0;
   for (let tries = 0; box && tries < maxLoads; tries += 1) {
     if (done()) break;
     const before = reviewElements(doc).length;
     box.scrollTop = box.scrollHeight;
-    await waitFor(() => reviewElements(doc).length > before, { ...options, timeout: Math.min(options.timeout ?? 4000, 1500) });
-    if (reviewElements(doc).length === before) break;
-    onLoad();
+    await waitFor(() => reviewElements(doc).length > before, { ...options, timeout: Math.min(options.timeout ?? 4000, 4000) });
+    if (reviewElements(doc).length === before) {
+      misses += 1;
+      if (misses >= 2) break;
+      box.scrollTop = Math.max(0, box.scrollHeight - box.clientHeight - 300);
+    } else {
+      misses = 0;
+      onLoad();
+    }
   }
 }
 
@@ -103,8 +112,10 @@ export async function collect(doc, options = {}, onProgress = () => {}) {
   // Without sorting, the negative ones among the reviews Maps loaded are still useful.
   await waitFor(() => doc.querySelector(SEL.review), options);
   onProgress(negativeReviews(doc));
+  // The histogram says how many 1-2 star reviews exist: stop once all of them are loaded.
+  const expected = histogram ? histogram[1] + histogram[2] : Infinity;
   await scrollUntil(doc, box, options, {
-    done: () => pastNegatives(doc),
+    done: () => pastNegatives(doc) || negativeReviews(doc).length >= expected,
     maxLoads: MAX_REVIEW_LOADS,
     onLoad: () => onProgress(negativeReviews(doc)),
   });

@@ -6,6 +6,7 @@
   --hr-on-surface: #1f1f1f;
   --hr-on-surface-variant: #5f6368;
   --hr-outline: #dadce0;
+  --hr-scrollbar: #5e5e5e;
   --hr-hover: rgb(60 64 67 / 8%);
   --hr-shadow: 0 1px 2px rgb(60 64 67 / 30%), 0 2px 6px 2px rgb(60 64 67 / 15%);
   --hr-font: 'Google Sans', Roboto, Arial, sans-serif;
@@ -18,6 +19,7 @@
     --hr-on-surface: #e8eaed;
     --hr-on-surface-variant: #9aa0a6;
     --hr-outline: #3c4043;
+    --hr-scrollbar: #9aa0a6;
     --hr-hover: rgb(232 234 237 / 8%);
   }
 }
@@ -36,6 +38,10 @@
   overflow-y: auto; box-sizing: border-box; padding: 16px; border-radius: 16px;
   background: var(--hr-surface); color: var(--hr-on-surface); box-shadow: var(--hr-shadow); font: 400 14px/20px var(--hr-font);
 }
+/* The scrollbar of the Maps panels measured on the live page: 6px, transparent track, 4px round thumb. */
+.hr-overlay::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+.hr-overlay::-webkit-scrollbar-track { background: transparent; }
+.hr-overlay::-webkit-scrollbar-thumb { background: var(--hr-scrollbar); border-radius: 4px; }
 .hr-overlay__header { display: flex; align-items: center; justify-content: space-between; }
 .hr-overlay__header h2 { margin: 0; font: 500 16px/24px var(--hr-font); color: var(--hr-purple); }
 .hr-overlay__close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--hr-on-surface-variant); font-size: 20px; line-height: 32px; cursor: pointer; }

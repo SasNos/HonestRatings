@@ -1,5 +1,11 @@
 # Status
 
+## 2-star reviews missing, scrollbar, 17 October 2026
+
+User screenshot (signed in, German, place with 1,440 reviews): the overlay ended with 1-star reviews and no 2-star ones although they exist. Most likely cause (not reproducible without a login): `scrollUntil` ended after the first scroll that brought no new review within 1.5 s, but Maps needs a few seconds per page, so the loading stopped inside the 1-star block. Changes: a load now waits up to 4 s; only two misses in a row end the loop (the second try scrolls up a little first); the loop also stops as soon as the number of loaded 1-2 star reviews reaches the histogram's count of 1 and 2 stars; the overlay line reads "N of M negative reviews (1-2 stars)" when the exact histogram is known, so a partial list is visible as such. Not verified on a live signed-in page.
+
+Scrollbar: the overlay now uses the scrollbar of the Maps panels, measured on the live page (`::-webkit-scrollbar` 6px wide, transparent track, thumb `#5e5e5e` with 4px radius; lighter thumb in dark mode). `scrollbar-width` is deliberately not set, because it would switch Chrome back to its own scrollbar.
+
 ## Click to the review, free map controls, all 1-2 star reviews, 17 October 2026
 
 - Every 1-2 star review is listed, also without text (shown as "No text"), 1 star first, then 2 stars (stable sort, Maps' order inside a rating). `negativeReviews()` no longer requires text.

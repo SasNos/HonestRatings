@@ -89,7 +89,11 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
   if (loading) panel.append(paragraph('hr-overlay__note', 'Loading the negative reviews…'));
   else if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the negative reviews.'));
   else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No negative reviews found.'));
-  if (reviews.length > 0) panel.append(paragraph('hr-overlay__note', `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
+  if (reviews.length > 0) {
+    // With the exact histogram the line says how many of all negative reviews are loaded.
+    const total = summary?.exact && summary.bad > reviews.length ? ` of ${summary.bad.toLocaleString('en-US')}` : '';
+    panel.append(paragraph('hr-overlay__note', `${reviews.length}${total} negative ${reviews.length === 1 && !total ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
+  }
   for (const review of reviews) panel.append(reviewCard(review, onReview));
   if (!loading && debug && reviews.length === 0 && !signedOut) {
     const found = (flag) => (flag ? 'found' : 'missing');

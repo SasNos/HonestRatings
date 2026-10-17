@@ -22,7 +22,7 @@ describe('overlay', () => {
     expect(panel.textContent).toContain('10% (5 / 50)');
     expect(panel.textContent).toContain('Google rating 4.3');
     expect(panel.querySelectorAll('.hr-review')).toHaveLength(2);
-    expect(panel.textContent).toContain('2 negative reviews (1-2 stars), 1 star first');
+    expect(panel.textContent).toContain('2 of 5 negative reviews (1-2 stars), 1 star first');
     expect(panel.textContent).toContain('Anonymous');
     panel.querySelector('.hr-overlay__close').click();
     expect(document.getElementById('hr-overlay')).toBeNull();
@@ -50,6 +50,14 @@ describe('overlay', () => {
   });
   it('asks to sign in when signed out', () => {
     expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');
+  });
+  it('says how many of all negative reviews are loaded when the exact histogram is known', () => {
+    const exact = { stars: 1, share: 0.02, bad: 1290, total: 100000, exact: true, average: 4.9 };
+    const reviews = [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }, { id: 'b', author: 'Bob', stars: 1, text: '' }];
+    expect(showOverlay({ title: 'A', summary: exact, reviews }).textContent).toContain('2 of 1,290 negative reviews (1-2 stars)');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 2 }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews: [reviews[0]] }).textContent).toContain('1 negative review (1-2 stars)');
+    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
   });
   it('opens a review on click, Enter or Space and ignores other keys', () => {
     const onReview = vi.fn();
