@@ -29,24 +29,27 @@ describe('chip', () => {
     document.body.append(chip);
     return { chip, onChange, button: chip.querySelector('button'), menu: chip.querySelector('ul') };
   }
-  it('opens, picks by click and closes', () => {
+  it('opens in the body so the chip row cannot clip it, picks by click and closes', () => {
     const { chip, onChange, button, menu } = mount();
     expect(menu.hidden).toBe(true);
     button.click();
     expect(menu.hidden).toBe(false);
-    chip.querySelectorAll('li')[3].click();
+    expect(menu.parentElement).toBe(document.body);
+    expect(menu.style.top).toBe('4px');
+    menu.querySelectorAll('li')[3].click();
     expect(onChange).toHaveBeenCalledWith(2);
     expect(menu.hidden).toBe(true);
     expect(button.querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
-    expect(chip.querySelectorAll('li[aria-selected="true"]')).toHaveLength(1);
+    expect(menu.querySelectorAll('li[aria-selected="true"]')).toHaveLength(1);
+    expect(chip.contains(menu)).toBe(false);
     button.click();
     button.click();
     expect(menu.hidden).toBe(true);
   });
   it('picks by keyboard and ignores other keys', () => {
-    const { chip, onChange, button } = mount();
-    const item = chip.querySelectorAll('li')[4];
+    const { onChange, button, menu } = mount();
     button.click();
+    const item = menu.querySelectorAll('li')[4];
     item.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
     expect(onChange).not.toHaveBeenCalled();
     item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
@@ -55,12 +58,15 @@ describe('chip', () => {
     item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
     expect(onChange).toHaveBeenCalledTimes(2);
   });
-  it('closes on Escape and on outside clicks', () => {
+  it('closes on Escape (button or menu) and on outside clicks', () => {
     const { chip, button, menu } = mount();
     button.click();
     chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(menu.hidden).toBe(false);
     chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.hidden).toBe(true);
+    button.click();
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(menu.hidden).toBe(true);
     button.click();
     menu.click();

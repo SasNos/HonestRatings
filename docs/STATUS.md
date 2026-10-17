@@ -1,5 +1,9 @@
 # Status
 
+## Dropdown did not open, 17 October 2026
+
+The menu was an absolutely positioned child of the chip, and the Maps chip row is only 48px high and clips its children, so the menu opened but stayed invisible. The menu now moves into the body on first open and is positioned fixed under the button (`position: fixed`, z-index 2000). Verified live with real clicks (signed out, English): the menu shows below the chip with the five purple star rows.
+
 ## Chip alignment, 17 October 2026
 
 The "Negative" chip now copies the Maps chip geometry measured on the live page: a 48px row with 6px right margin, a 32px pill centered in it (8px vertical margin), radius 8px, no border, Maps shadow, padding 0 4px 0 12px, label 500 14/20 Google Sans Text, 24px caret. Checked live (pill at the same y and height as the "Rating" chip); not re-checked in German or dark mode.

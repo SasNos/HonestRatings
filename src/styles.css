@@ -44,7 +44,7 @@
 .hr-chip__caret { position: relative; flex: none; width: 24px; height: 24px; }
 .hr-chip__caret::after { content: ''; position: absolute; top: 10px; left: 7px; border: 5px solid transparent; border-top-color: currentColor; border-bottom: 0; }
 .hr-chip__menu {
-  position: absolute; z-index: 1000; top: 44px; left: 0; min-width: 200px; margin: 0; padding: 8px 0;
+  position: fixed; z-index: 2000; min-width: 200px; margin: 0; padding: 8px 0;
   list-style: none; background: var(--hr-surface); border-radius: 8px; box-shadow: var(--hr-shadow);
 }
 .hr-chip__menu[hidden] { display: none; }

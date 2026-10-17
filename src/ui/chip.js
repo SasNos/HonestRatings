@@ -22,6 +22,13 @@ export function createChip(onChange) {
   let current = 5;
 
   const setOpen = (open) => {
+    if (open) {
+      // The chip row of Maps clips its children, so the menu lives in the body.
+      const box = button.getBoundingClientRect();
+      menu.style.top = `${box.bottom + 4}px`;
+      menu.style.left = `${box.left}px`;
+      document.body.append(menu);
+    }
     menu.hidden = !open;
     button.setAttribute('aria-expanded', String(open));
   };
@@ -56,11 +63,13 @@ export function createChip(onChange) {
   menu.append(...items);
 
   button.addEventListener('click', () => setOpen(menu.hidden));
-  root.addEventListener('keydown', (event) => {
+  const onKeydown = (event) => {
     if (event.key === 'Escape') setOpen(false);
-  });
+  };
+  root.addEventListener('keydown', onKeydown);
+  menu.addEventListener('keydown', onKeydown);
   document.addEventListener('click', (event) => {
-    if (!root.contains(event.target)) setOpen(false);
+    if (!root.contains(event.target) && !menu.contains(event.target)) setOpen(false);
   });
 
   setOpen(false);
