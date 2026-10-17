@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Honest Ratings",
+  "version": "0.1.0",
+  "description": "Puts the bad reviews on Google Maps first: negative stars, bad review counts and the three worst reviews.",
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.com/maps/*",
+        "https://www.google.de/maps/*",
+        "https://www.google.at/maps/*",
+        "https://www.google.ch/maps/*",
+        "https://www.google.co.uk/maps/*",
+        "https://www.google.fr/maps/*",
+        "https://www.google.es/maps/*",
+        "https://www.google.it/maps/*",
+        "https://www.google.nl/maps/*",
+        "https://maps.google.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

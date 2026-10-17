@@ -1,0 +1,99 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderStars } from '../src/ui/stars.js';
+import { renderBadge } from '../src/ui/badge.js';
+import { createChip } from '../src/ui/chip.js';
+import { removeOverlay, showOverlay } from '../src/ui/overlay.js';
+
+beforeEach(() => {
+  document.body.innerHTML = '';
+});
+
+describe('stars and badge', () => {
+  it('fills the requested number of stars', () => {
+    const stars = renderStars(2);
+    expect(stars.querySelectorAll('.hr-star')).toHaveLength(5);
+    expect(stars.querySelectorAll('.hr-star--empty')).toHaveLength(3);
+    expect(stars.getAttribute('aria-label')).toBe('2 of 5 negative stars');
+  });
+  it('shows exact, estimated and unknown counts', () => {
+    expect(renderBadge({ stars: 1, bad: 1234, exact: true }).textContent).toBe('1,234 bad');
+    expect(renderBadge({ stars: 1, bad: 12, exact: false }).textContent).toBe('~12 bad');
+    expect(renderBadge({ stars: 1, bad: null, exact: false }).textContent).toBe('');
+  });
+});
+
+describe('chip', () => {
+  function mount() {
+    const onChange = vi.fn();
+    const chip = createChip(onChange);
+    document.body.append(chip);
+    return { chip, onChange, button: chip.querySelector('button'), menu: chip.querySelector('ul') };
+  }
+  it('opens, picks by click and closes', () => {
+    const { chip, onChange, button, menu } = mount();
+    expect(menu.hidden).toBe(true);
+    button.click();
+    expect(menu.hidden).toBe(false);
+    chip.querySelectorAll('li')[3].click();
+    expect(onChange).toHaveBeenCalledWith(2);
+    expect(menu.hidden).toBe(true);
+    expect(button.querySelectorAll('.hr-star:not(.hr-star--empty)')).toHaveLength(2);
+    expect(chip.querySelectorAll('li[aria-selected="true"]')).toHaveLength(1);
+    button.click();
+    button.click();
+    expect(menu.hidden).toBe(true);
+  });
+  it('picks by keyboard and ignores other keys', () => {
+    const { chip, onChange, button } = mount();
+    const item = chip.querySelectorAll('li')[4];
+    button.click();
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    expect(onChange).not.toHaveBeenCalled();
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onChange).toHaveBeenCalledWith(1);
+    button.click();
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+  it('closes on Escape and on outside clicks', () => {
+    const { chip, button, menu } = mount();
+    button.click();
+    chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(menu.hidden).toBe(false);
+    chip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.hidden).toBe(true);
+    button.click();
+    menu.click();
+    expect(menu.hidden).toBe(false);
+    document.body.click();
+    expect(menu.hidden).toBe(true);
+  });
+});
+
+describe('overlay', () => {
+  const reviews = [{ author: 'Ann', stars: 1, text: 'Cold food' }, { author: '', stars: 2, text: 'Rude' }];
+  it('shows the summary and the reviews and can be closed', () => {
+    const panel = showOverlay({ title: 'Cafe', summary: { stars: 2, bad: 5, total: 50, exact: true }, reviews });
+    expect(panel.textContent).toContain('5 of 50 reviews are 1-2 stars');
+    expect(panel.querySelectorAll('.hr-review')).toHaveLength(2);
+    expect(panel.textContent).toContain('Anonymous');
+    panel.querySelector('.hr-overlay__close').click();
+    expect(document.getElementById('hr-overlay')).toBeNull();
+  });
+  it('handles estimates, missing summaries, empty lists and loading', () => {
+    expect(showOverlay({ title: 'A', summary: { stars: 1, exact: false }, reviews: [] }).textContent).toContain('Estimated from the average rating');
+    expect(showOverlay({ title: 'A', summary: null, reviews: [] }).textContent).toContain('No bad reviews with text found.');
+    expect(showOverlay({ title: 'A', loading: true }).textContent).toContain('Loading');
+  });
+  it('asks to sign in when signed out', () => {
+    expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');
+  });
+  it('replaces the previous overlay and can remove it', () => {
+    showOverlay({ title: 'A', reviews: [] });
+    showOverlay({ title: 'B', reviews: [] });
+    expect(document.querySelectorAll('#hr-overlay')).toHaveLength(1);
+    removeOverlay();
+    expect(document.getElementById('hr-overlay')).toBeNull();
+    removeOverlay();
+  });
+});
