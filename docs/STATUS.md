@@ -1,5 +1,9 @@
 # Status
 
+## Few results above one negative star, 17 October 2026
+
+User: the negative filter only worked with 1 star. Cause: the result list holds mostly places with Google ratings of 4 or more, and two or more negative stars mean roughly 3.7 or worse, so almost nothing was left. Changes: (1) the Maps rating options become exact bands while the extension runs ("3.0" = 3.0 to 3.4; Maps' own server filter still means "or higher", the extension hides what is above the band; "Any rating" clears it); (2) with a band or a negative filter active the extension scrolls the result feed to load more places (until 8 match, at most 10 loads) and scrolls back to the top, and it repeats this after Maps reloads the list. Verified live only that the feed (`[role=feed]`, overflow auto) accepts a scripted scrollTop; signed out Maps caps the list at 10 places, so loading more could not be observed. Not verified: loading more while signed in.
+
 ## Maps rating filter and negative filter exclude each other, 17 October 2026
 
 The two filters were combined (AND). Now they are exclusive: state `minStars` is 0 for the Maps view (original ratings, Maps' own filter, no negative row selected) and 1-5 for the negative view. Picking a negative row sets the state, clicks Maps' "Any rating" item (first menu item, with a flag so the click does not count as a Maps pick), marks all Maps items unselected and closes the menu with Escape. Any click on a Maps item in the menu sets the state back to 0. Row "1" is now a real pick (all places, purple view), so the neutral state is separate from it. Not verified live: that Maps accepts the scripted click on "Any rating" and refreshes the list.

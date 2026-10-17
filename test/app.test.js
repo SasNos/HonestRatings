@@ -132,7 +132,82 @@ describe('rating menu', () => {
     expect(html.hasAttribute('data-hr-negative')).toBe(true);
     document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
     expect(html.hasAttribute('data-hr-negative')).toBe(false);
-    expect(document.querySelector('[role="article"]').hasAttribute('data-hr-filtered')).toBe(false);
+  });
+  it('turns a Maps rating option into an exact band instead of "or higher"', () => {
+    page();
+    const app = createApp(document, FAST, 0);
+    app.scan();
+    const cards = document.querySelectorAll('[role="article"]');
+    const items = document.querySelectorAll('#list > [role="menuitemradio"]');
+    items[1].click(); // "2.0 stars": 2.0 to 2.4
+    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(true); // 4.0 is above the band
+    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false); // 2.0 is inside
+    items[0].click(); // Any rating
+    expect(cards[0].hasAttribute('data-hr-filtered')).toBe(false);
+    expect(cards[1].hasAttribute('data-hr-filtered')).toBe(false);
+  });
+  it('keeps the places without a rating while a band is active', () => {
+    page();
+    document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', '<div role="article"><span>no rating</span></div>');
+    const app = createApp(document, FAST, 0);
+    app.scan();
+    document.querySelectorAll('#list > [role="menuitemradio"]')[1].click();
+    expect(document.querySelectorAll('[role="article"]')[2].hasAttribute('data-hr-filtered')).toBe(false);
+  });
+  describe('loading more results for a narrow filter', () => {
+    function feedWith(extra, label = '2.0 stars 100 Reviews') {
+      page();
+      const feed = document.querySelector('[role="feed"]');
+      Object.defineProperty(feed, 'scrollHeight', { value: 500, configurable: true });
+      const state = { loads: 0, resets: 0 };
+      Object.defineProperty(feed, 'scrollTop', {
+        configurable: true,
+        get: () => 0,
+        set(value) {
+          if (value === 0) state.resets += 1;
+          else {
+            state.loads += 1;
+            if (state.loads <= extra) feed.insertAdjacentHTML('beforeend', card(label));
+          }
+        },
+      });
+      return state;
+    }
+    it('scrolls until enough places match or nothing new arrives, then scrolls back', async () => {
+      const state = feedWith(2);
+      const app = createApp(document, FAST, 0);
+      app.scan();
+      const rows = document.querySelectorAll('.hr-menu-item');
+      rows[1].click();
+      rows[2].click(); // a second request while the first is still loading is ignored
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(3);
+      expect(document.querySelectorAll('[role="article"]:not([data-hr-filtered])')).toHaveLength(3);
+    });
+    it('stops at once when enough places already match', async () => {
+      const state = feedWith(0);
+      document.querySelector('[role="feed"]').insertAdjacentHTML('beforeend', card('2.0 stars 100 Reviews').repeat(8));
+      const app = createApp(document, FAST, 0);
+      app.scan();
+      document.querySelectorAll('.hr-menu-item')[1].click();
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(0);
+    });
+    it('gives up after the maximum number of loads', async () => {
+      const state = feedWith(Infinity, '4.0 stars 1,000 Reviews');
+      createApp(document, FAST, 0).scan();
+      document.querySelectorAll('.hr-menu-item')[4].click();
+      await vi.waitFor(() => expect(state.resets).toBe(1));
+      expect(state.loads).toBe(10);
+    });
+    it('does nothing without a feed or without an active filter', () => {
+      page();
+      document.querySelector('[role="feed"]').remove();
+      const app = createApp(document, FAST, 0);
+      app.scan();
+      document.querySelectorAll('.hr-menu-item')[1].click();
+      expect(document.querySelectorAll('[role="article"]')).toHaveLength(0);
+    });
   });
   it('shows no Maps option as selected while the negative view is active, and watches a menu once', () => {
     page();

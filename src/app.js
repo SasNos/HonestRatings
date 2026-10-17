@@ -7,6 +7,9 @@ import { enhanceRatingMenu, SECTION_CLASS } from './ui/ratingMenu.js';
 import { showOverlay, removeOverlay } from './ui/overlay.js';
 
 const SCAN_DELAY = 200;
+// Loading more results for a narrow filter: stop at this many visible places or tries.
+const ENOUGH_RESULTS = 8;
+const MAX_LOADS = 10;
 
 function ratingOf(scope) {
   for (const image of scope.querySelectorAll(SEL.ratingImage)) {
@@ -18,10 +21,13 @@ function ratingOf(scope) {
   return null;
 }
 
-export function createApp(doc = document, collectOptions = {}) {
+export function createApp(doc = document, collectOptions = {}, loadDelay = 700) {
   // 0: the original Maps view and Maps' own rating filter. 1-5: the negative view,
   // places stay with at least this many negative stars. Both filters exclude each other.
   let minStars = 0;
+  // Exact band of the Maps rating options: "3.0" now means 3.0 to 3.4, not 3.0 or higher.
+  let band = null;
+  let filling = false;
   let internalClick = false;
   const watched = new WeakSet();
   let place = null;
@@ -48,13 +54,33 @@ export function createApp(doc = document, collectOptions = {}) {
         badge.dataset.hrStars = String(summary.stars);
         found.image.after(badge);
       }
-      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) < minStars);
+      const outsideBand = band !== null && found && (found.rating.average < band.min || found.rating.average >= band.max);
+      card.toggleAttribute('data-hr-filtered', Number(badge?.dataset.hrStars) < minStars || Boolean(outsideBand));
     }
+  }
+
+  // Maps only lists the first results; with a narrow filter scroll the list to load more.
+  async function fillList() {
+    const feed = doc.querySelector(SEL.feed);
+    if (filling || !feed || (minStars === 0 && band === null)) return;
+    filling = true;
+    for (let tries = 0; tries < MAX_LOADS; tries += 1) {
+      const before = doc.querySelectorAll(SEL.card).length;
+      if (doc.querySelectorAll(`${SEL.card}:not([data-hr-filtered])`).length >= ENOUGH_RESULTS) break;
+      feed.scrollTop = feed.scrollHeight;
+      await new Promise((resolve) => setTimeout(resolve, loadDelay));
+      decorateCards();
+      if (doc.querySelectorAll(SEL.card).length === before) break;
+    }
+    feed.scrollTop = 0;
+    filling = false;
   }
 
   function pick(min, menu, mapsItems) {
     minStars = min;
+    band = null;
     decorateCards();
+    fillList();
     // Reset Maps' own rating filter to "Any rating" so the two filters never combine.
     internalClick = true;
     mapsItems[0].click();
@@ -81,7 +107,10 @@ export function createApp(doc = document, collectOptions = {}) {
         menu.addEventListener('click', (event) => {
           if (internalClick || event.target.closest(`.${SECTION_CLASS}`) || !event.target.closest(SEL.sortOption)) return;
           minStars = 0;
+          const rating = parseRatingLabel(event.target.closest(SEL.sortOption).querySelector('[aria-label]')?.getAttribute('aria-label'));
+          band = rating ? { min: rating.average, max: rating.average + 0.5 } : null;
           decorateCards();
+          fillList();
         });
       }
     }
@@ -134,6 +163,8 @@ export function createApp(doc = document, collectOptions = {}) {
   function scan() {
     enhanceMenus();
     decorateCards();
+    // Maps reloads the list after a filter change: keep filling it while a filter is active.
+    fillList();
     trackPlace();
   }
 
