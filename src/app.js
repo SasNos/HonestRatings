@@ -34,7 +34,9 @@ export function createApp(doc = document, collectOptions = {}) {
 
   // Ads put a "Sponsored" h1 before the title; the results list has its own h1s.
   function panelTitle() {
-    const titles = [...doc.querySelectorAll(SEL.placeTitle)].filter((h1) => !h1.closest(SEL.feed) && h1.textContent.trim());
+    const titles = [...doc.querySelectorAll(SEL.placeTitle)].filter(
+      (h1) => !h1.closest(SEL.feed) && h1.textContent.trim(),
+    );
     return titles.at(-1)?.textContent.trim() || null;
   }
 
@@ -56,13 +58,16 @@ export function createApp(doc = document, collectOptions = {}) {
     // up after a moment, so no numbers of the previous place are read.
     const wanted = slug(urlTitle);
     let title = null;
-    await waitFor(() => {
-      const shownTitle = panelTitle();
-      const shown = slug(shownTitle || '');
-      if (!shown || !(shown.includes(wanted) || wanted.includes(shown))) return false;
-      title = shownTitle;
-      return true;
-    }, { ...collectOptions, timeout: Math.min(collectOptions.timeout ?? 4000, 3000) });
+    await waitFor(
+      () => {
+        const shownTitle = panelTitle();
+        const shown = slug(shownTitle || '');
+        if (!shown || !(shown.includes(wanted) || wanted.includes(shown))) return false;
+        title = shownTitle;
+        return true;
+      },
+      { ...collectOptions, timeout: Math.min(collectOptions.timeout ?? 4000, 3000) },
+    );
     if (mine !== run) return;
     title = title || panelTitle() || urlTitle;
     // The overview already lists the star histogram, so the numbers show at once.
@@ -80,7 +85,12 @@ export function createApp(doc = document, collectOptions = {}) {
       doc.documentElement.classList.remove('hr-collecting');
     }
     if (mine !== run) return;
-    const result = { summary: summaryOf(data?.histogram ?? null), reviews: data?.reviews ?? [], signedOut: data?.signedOut, debug: data?.debug };
+    const result = {
+      summary: summaryOf(data?.histogram ?? null),
+      reviews: data?.reviews ?? [],
+      signedOut: data?.signedOut,
+      debug: data?.debug,
+    };
     // An empty result is not cached: it may just be a slow load, and a revisit should retry.
     if (result.reviews.length > 0) cache.set(key, result);
     showOverlay({ title, ...result, onReview });

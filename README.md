@@ -19,12 +19,12 @@ The overlay sits right of the map and leaves the Maps controls free: below the a
 `bad = reviews with 1 or 2 stars`, `share = bad / all reviews`.
 
 | Share of bad reviews | Negative stars |
-| --- | --- |
-| up to 10 % | 1 |
-| up to 15 % | 2 |
-| up to 22 % | 3 |
-| up to 30 % | 4 |
-| more | 5 |
+| -------------------- | -------------- |
+| up to 10 %           | 1              |
+| up to 15 %           | 2              |
+| up to 22 %           | 3              |
+| up to 30 %           | 4              |
+| more                 | 5              |
 
 A place with a 4.0 average typically lands at 1 star. The overlay uses the exact star histogram of the place panel; when it cannot be read, the numbers are estimated from the average rating (`~`). The thresholds are constants in [src/scoring.js](src/scoring.js).
 
@@ -47,9 +47,12 @@ Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" a
 ## Development
 
 ```powershell
-npm test        # vitest, jsdom, 100 % line and branch coverage enforced
-npm run build   # bundles src/ into dist/
-npm run icons   # regenerates icons/
+npm test              # vitest, jsdom, 100 % line and branch coverage enforced
+npm run lint          # ESLint
+npm run format        # Prettier, rewrites files (format:check only checks)
+npm run check         # lint, format check and tests, as in CI
+npm run build         # bundles src/ into dist/
+npm run icons         # regenerates icons/
 ```
 
 Code and documentation are English. The design follows Google's Material look (purple accent, 4 px spacing grid, light and dark mode).
