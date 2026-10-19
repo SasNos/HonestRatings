@@ -115,3 +115,4 @@ Where things are:
 ## Open work
 
 1. Verify in a signed-in Maps session: sorting by lowest rating, the review markup, loading by scrolling, the click to the review and the flash; fix selectors if needed.
+2. Integration into Spark as a built-in tool (Spark 0.4), designed in `docs/SPARK.md`; nothing built in Spark yet.

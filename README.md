@@ -28,6 +28,10 @@ The overlay sits right of the map and leaves the Maps controls free: below the a
 
 A place with a 4.0 average typically lands at 1 star. The overlay uses the exact star histogram of the place panel; when it cannot be read, the numbers are estimated from the average rating (`~`). The thresholds are constants in [src/scoring.js](src/scoring.js).
 
+## In Spark
+
+Honest Ratings is planned as a built-in tool of the browser Spark; see [docs/SPARK.md](docs/SPARK.md).
+
 ## Install (developer mode)
 
 ```powershell
