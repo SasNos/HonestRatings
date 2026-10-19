@@ -51,7 +51,8 @@ function longestText(element) {
 function starsOf(element) {
   for (const image of element.querySelectorAll(SEL.ratingImage)) {
     const numbers = image.getAttribute('aria-label').match(/\d+/g);
-    if (numbers && numbers[0] >= 1 && numbers[0] <= 5 && (numbers.length === 1 || numbers[1] === '5')) return Number(numbers[0]);
+    if (numbers && numbers[0] >= 1 && numbers[0] <= 5 && (numbers.length === 1 || numbers[1] === '5'))
+      return Number(numbers[0]);
   }
   return null;
 }

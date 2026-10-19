@@ -50,7 +50,14 @@ export function summarize({ histogram, average, total }) {
     const sum = totalCount(histogram);
     if (sum > 0) {
       const bad = badCount(histogram);
-      return { stars: negativeStars(bad / sum), share: bad / sum, bad, total: sum, exact: true, average: average ?? null };
+      return {
+        stars: negativeStars(bad / sum),
+        share: bad / sum,
+        bad,
+        total: sum,
+        exact: true,
+        average: average ?? null,
+      };
     }
   }
   if (average == null) return null;

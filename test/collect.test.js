@@ -16,16 +16,24 @@ function panel({ sort = true, options = true, withTabs = true } = {}) {
   const clicks = [];
   reviews?.addEventListener('click', () => {
     clicks.push('reviews');
-    area.innerHTML = [5, 4, 3, 2, 1].map((s) => `<div role="img" aria-label="${s} stars, ${s} reviews"></div>`).join('');
+    area.innerHTML = [5, 4, 3, 2, 1]
+      .map((s) => `<div role="img" aria-label="${s} stars, ${s} reviews"></div>`)
+      .join('');
     if (sort) {
       area.insertAdjacentHTML('beforeend', '<button data-value="Sort"></button>');
       area.querySelector('button').addEventListener('click', () => {
         clicks.push('sort');
         if (options) {
-          area.insertAdjacentHTML('beforeend', [0, 1, 2, 3].map((i) => `<div role="menuitemradio" id="o${i}"></div>`).join(''));
+          area.insertAdjacentHTML(
+            'beforeend',
+            [0, 1, 2, 3].map((i) => `<div role="menuitemradio" id="o${i}"></div>`).join(''),
+          );
           document.getElementById('o3').addEventListener('click', () => {
             clicks.push('lowest');
-            area.insertAdjacentHTML('beforeend', '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>');
+            area.insertAdjacentHTML(
+              'beforeend',
+              '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>',
+            );
           });
         }
       });
@@ -90,7 +98,8 @@ describe('loading more reviews', () => {
     });
     return state;
   }
-  const review = (id, stars, text) => `<div data-review-id="${id}"><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
+  const review = (id, stars, text) =>
+    `<div data-review-id="${id}"><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
   afterEach(() => {
     delete document.body.scrollHeight;
     delete document.body.clientHeight;
@@ -112,7 +121,9 @@ describe('loading more reviews', () => {
     expect(result.reviews.map((r) => r.text)).toEqual(['Bad']);
   });
   it('gives up after the maximum number of loads', async () => {
-    const state = scrollingPanel((count, area) => area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)));
+    const state = scrollingPanel((count, area) =>
+      area.insertAdjacentHTML('beforeend', review(`m${count}`, 1, `More ${count}`)),
+    );
     const result = await collect(document, FAST);
     expect(state.loads).toBe(30);
     expect(result.reviews).toHaveLength(31);
@@ -120,7 +131,9 @@ describe('loading more reviews', () => {
   it('scrolls once and gives up when no review element is on the page at all', async () => {
     const state = scrollingPanel(() => {});
     document.getElementById('area').addEventListener('click', () => {});
-    document.querySelectorAll('button[role="tab"]')[1].replaceWith(document.querySelectorAll('button[role="tab"]')[1].cloneNode(true));
+    document
+      .querySelectorAll('button[role="tab"]')[1]
+      .replaceWith(document.querySelectorAll('button[role="tab"]')[1].cloneNode(true));
     const result = await collect(document, FAST);
     expect(result.reviews).toEqual([]);
     expect(state.loads).toBe(1);
@@ -162,7 +175,8 @@ describe('revealReview', () => {
   });
   it('flashes a review that is already on the page without touching the tabs', async () => {
     const clicks = panel();
-    document.getElementById('area').innerHTML = '<div data-review-id="here"><span role="img" aria-label="1 star"></span></div>';
+    document.getElementById('area').innerHTML =
+      '<div data-review-id="here"><span role="img" aria-label="1 star"></span></div>';
     expect(await revealReview(document, 'here', FAST)).toBe(true);
     expect(clicks).toEqual([]);
   });
@@ -186,8 +200,20 @@ describe('revealReview', () => {
       set(value) {
         if (value > 0) {
           loads += 1;
-          if (loads === 2) document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="late"><span role="img" aria-label="2 stars"></span></div>');
-          else document.getElementById('area').insertAdjacentHTML('beforeend', `<div data-review-id="filler${loads}"><span role="img" aria-label="1 star"></span></div>`);
+          if (loads === 2)
+            document
+              .getElementById('area')
+              .insertAdjacentHTML(
+                'beforeend',
+                '<div data-review-id="late"><span role="img" aria-label="2 stars"></span></div>',
+              );
+          else
+            document
+              .getElementById('area')
+              .insertAdjacentHTML(
+                'beforeend',
+                `<div data-review-id="filler${loads}"><span role="img" aria-label="1 star"></span></div>`,
+              );
         }
       },
     });
@@ -200,7 +226,12 @@ describe('collect', () => {
   it('still reads the loaded reviews when there is no sort button', async () => {
     panel({ sort: false });
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
-      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="a"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Meh</span></div>');
+      document
+        .getElementById('area')
+        .insertAdjacentHTML(
+          'beforeend',
+          '<div data-review-id="a"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Meh</span></div>',
+        );
     });
     const result = await collect(document, FAST);
     expect(result.reviews.map((r) => r.text)).toEqual(['Meh']);
@@ -230,7 +261,11 @@ describe('collect', () => {
     const seen = [];
     panel();
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
-      document.getElementById('area').addEventListener('mousedown', (event) => seen.push(event.target.getAttribute('data-value') || event.target.getAttribute('role')));
+      document
+        .getElementById('area')
+        .addEventListener('mousedown', (event) =>
+          seen.push(event.target.getAttribute('data-value') || event.target.getAttribute('role')),
+        );
     });
     const result = await collect(document, FAST);
     expect(seen).toEqual(['Sort', 'menuitemradio']);
@@ -240,13 +275,21 @@ describe('collect', () => {
   it('waits until the list changes after choosing the sort order', async () => {
     panel();
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
-      document.getElementById('area').insertAdjacentHTML('beforeend', '<div data-review-id="old"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Early</span></div>');
+      document
+        .getElementById('area')
+        .insertAdjacentHTML(
+          'beforeend',
+          '<div data-review-id="old"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Early</span></div>',
+        );
       setTimeout(() => {
         document.querySelector('[data-review-id="old"]')?.setAttribute('data-review-id', 'new');
       }, 0);
     });
     document.body.addEventListener('click', (event) => {
-      if (event.target.id === 'o3') document.querySelector('[data-review-id="old"], [data-review-id="new"]')?.setAttribute('data-review-id', 'new2');
+      if (event.target.id === 'o3')
+        document
+          .querySelector('[data-review-id="old"], [data-review-id="new"]')
+          ?.setAttribute('data-review-id', 'new2');
     });
     const result = await collect(document, FAST);
     expect(result.reviews.map((r) => r.text)).toContain('Early');
@@ -267,7 +310,10 @@ describe('collect', () => {
   });
   it('does not sort when signed out, because Maps would show a sign-in dialog', async () => {
     const clicks = panel();
-    document.body.insertAdjacentHTML('beforeend', '<a href="https://accounts.google.com/ServiceLogin?hl=en">Sign in</a>');
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<a href="https://accounts.google.com/ServiceLogin?hl=en">Sign in</a>',
+    );
     const result = await collect(document, FAST);
     expect(clicks).not.toContain('sort');
     expect(result).toMatchObject({ reviews: [], signedOut: true });

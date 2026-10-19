@@ -28,10 +28,12 @@ function summaryRow(summary) {
   row.className = 'hr-overlay__summary';
   const tilde = summary.exact ? '' : '~';
   let text = `${tilde}${formatPercent(summary.share)}%`;
-  if (summary.bad !== null) text += ` (${tilde}${summary.bad.toLocaleString('en-US')} / ${summary.total.toLocaleString('en-US')})`;
+  if (summary.bad !== null)
+    text += ` (${tilde}${summary.bad.toLocaleString('en-US')} / ${summary.total.toLocaleString('en-US')})`;
   const figures = document.createElement('div');
   figures.append(paragraph('hr-overlay__figure', text));
-  if (summary.average !== null) figures.append(paragraph('hr-overlay__note', `Google rating ${summary.average.toFixed(1)}`));
+  if (summary.average !== null)
+    figures.append(paragraph('hr-overlay__note', `Google rating ${summary.average.toFixed(1)}`));
   row.append(renderStars(summary.stars), figures);
   return row;
 }
@@ -63,7 +65,15 @@ function reviewCard(review, onReview) {
 
 // Panel on the right of the map with the negative reviews of the open place.
 // While reviews are still loading it can be shown again with what is there so far.
-export function showOverlay({ title, summary, reviews = [], loading = false, signedOut = false, debug = null, onReview = () => {} }) {
+export function showOverlay({
+  title,
+  summary,
+  reviews = [],
+  loading = false,
+  signedOut = false,
+  debug = null,
+  onReview = () => {},
+}) {
   const previous = document.getElementById(ID);
   const scrollTop = previous ? previous.scrollTop : 0;
   removeOverlay();
@@ -87,13 +97,25 @@ export function showOverlay({ title, summary, reviews = [], loading = false, sig
 
   if (summary) panel.append(summaryRow(summary));
   if (loading) panel.append(paragraph('hr-overlay__note', 'Loading the negative reviews…'));
-  else if (signedOut) panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the negative reviews.'));
+  else if (signedOut)
+    panel.append(paragraph('hr-overlay__note', 'Sign in to Google Maps to see the negative reviews.'));
   else if (reviews.length === 0) panel.append(paragraph('hr-overlay__note', 'No negative reviews found.'));
-  if (reviews.length > 0) panel.append(paragraph('hr-overlay__note', `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars), 1 star first`));
+  if (reviews.length > 0)
+    panel.append(
+      paragraph(
+        'hr-overlay__note',
+        `${reviews.length} negative ${reviews.length === 1 ? 'review' : 'reviews'} (1-2 stars), 1 star first`,
+      ),
+    );
   for (const review of reviews) panel.append(reviewCard(review, onReview));
   if (!loading && debug && reviews.length === 0 && !signedOut) {
     const found = (flag) => (flag ? 'found' : 'missing');
-    panel.append(paragraph('hr-overlay__debug', `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`));
+    panel.append(
+      paragraph(
+        'hr-overlay__debug',
+        `Debug: sort button ${found(debug.sort)}, ${debug.options} menu items, ${debug.reviewElements} review elements, histogram ${histogramText(debug.histogram)}, ${debug.withStars} with stars, ${debug.withText} with text`,
+      ),
+    );
   }
   document.body.append(panel);
   panel.scrollTop = scrollTop;
