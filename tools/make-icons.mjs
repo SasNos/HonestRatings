@@ -1,4 +1,4 @@
-// Draws the purple star icon as PNG files without any image library.
+// Draws the ember star icon (Mber Flow accent #d9743a) as PNG files without any image library.
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
@@ -53,7 +53,7 @@ function png(size) {
       for (let sy = 0; sy < 4; sy += 1)
         for (let sx = 0; sx < 4; sx += 1)
           cover += inside((x + (sx + 0.5) / 4) * scale, (y + (sy + 0.5) / 4) * scale) ? 1 : 0;
-      row.push(0x7b, 0x1f, 0xa2, Math.round((cover / 16) * 255));
+      row.push(0xd9, 0x74, 0x3a, Math.round((cover / 16) * 255));
     }
     rows.push(Buffer.from(row));
   }
