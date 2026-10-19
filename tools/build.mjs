@@ -12,5 +12,6 @@ await build({
 });
 cpSync('src/styles.css', 'dist/styles.css');
 cpSync('manifest.json', 'dist/manifest.json');
+cpSync('spark.json', 'dist/spark.json');
 if (existsSync('icons')) cpSync('icons', 'dist/icons', { recursive: true });
 console.log('Built dist/ - load it in chrome://extensions (developer mode, "Load unpacked").');
