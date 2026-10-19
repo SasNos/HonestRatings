@@ -8,6 +8,10 @@ Honest Ratings goes into Spark (`SasNos/Spark`) as a built-in tool. Spark has no
 - Spark gets a small Rust module (`honest_ratings`) that owns the settings switch (on by default), the list of Maps hosts and the injection. All tool logic stays in this repository with its own tests.
 - The Chrome extension keeps working from the same source (`manifest.json`, `npm run build`).
 
+## spark.json
+
+`spark.json` describes the tool for Spark in the same format as Group Repos (`SasNos/GroupRepos`): `matches` (the Maps hosts, kept equal to `manifest.json` by a test), `css` and `js` to inject, `runAt`, `start: null` (the script starts itself), `storage: null` (it stores nothing) and `network: []` (no requests of its own). `npm run build` copies it into `dist/`.
+
 ## Build and copy
 
 - `npm run build` writes `dist/content.js` (one IIFE, no globals) and `dist/styles.css`.

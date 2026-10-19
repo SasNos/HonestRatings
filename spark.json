@@ -1,0 +1,28 @@
+{
+  "id": "honest-ratings",
+  "name": "Honest Ratings",
+  "version": "0.1.0",
+  "description": "Shows the negative reviews of a Google Maps place at a glance: negative stars, share of bad reviews and every negative review, worst first.",
+  "matches": [
+    "https://www.google.com/maps/*",
+    "https://www.google.de/maps/*",
+    "https://www.google.at/maps/*",
+    "https://www.google.ch/maps/*",
+    "https://www.google.co.uk/maps/*",
+    "https://www.google.fr/maps/*",
+    "https://www.google.es/maps/*",
+    "https://www.google.it/maps/*",
+    "https://www.google.nl/maps/*",
+    "https://maps.google.com/*"
+  ],
+  "css": [
+    "styles.css"
+  ],
+  "js": [
+    "content.js"
+  ],
+  "start": null,
+  "runAt": "document_idle",
+  "storage": null,
+  "network": []
+}
