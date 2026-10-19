@@ -27,7 +27,11 @@ export function findReviewsTab(doc) {
 export function findSort(doc) {
   const known = doc.querySelector(SEL.sortButton);
   if (known) return known;
-  return [...doc.querySelectorAll(SEL.sortCandidate)].find((el) => SORT_LABEL.test(el.getAttribute('aria-label') || el.textContent.slice(0, 40))) || null;
+  return (
+    [...doc.querySelectorAll(SEL.sortCandidate)].find((el) =>
+      SORT_LABEL.test(el.getAttribute('aria-label') || el.textContent.slice(0, 40)),
+    ) || null
+  );
 }
 
 // Maps menus listen for the whole pointer sequence, not only for click().
@@ -71,7 +75,10 @@ async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {
     if (done()) break;
     const before = reviewElements(doc).length;
     box.scrollTop = box.scrollHeight;
-    await waitFor(() => reviewElements(doc).length > before, { ...options, timeout: Math.min(options.timeout ?? 4000, 1500) });
+    await waitFor(() => reviewElements(doc).length > before, {
+      ...options,
+      timeout: Math.min(options.timeout ?? 4000, 1500),
+    });
     if (reviewElements(doc).length === before) break;
     onLoad();
   }

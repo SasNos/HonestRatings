@@ -2,7 +2,18 @@
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const POINTS = [[12, 2], [14.81, 8.63], [22, 9.24], [16.54, 13.97], [18.18, 21], [12, 17.27], [5.82, 21], [7.46, 13.97], [2, 9.24], [9.19, 8.63]];
+const POINTS = [
+  [12, 2],
+  [14.81, 8.63],
+  [22, 9.24],
+  [16.54, 13.97],
+  [18.18, 21],
+  [12, 17.27],
+  [5.82, 21],
+  [7.46, 13.97],
+  [2, 9.24],
+  [9.19, 8.63],
+];
 
 function inside(x, y) {
   let hit = false;
@@ -39,7 +50,9 @@ function png(size) {
     const row = [0];
     for (let x = 0; x < size; x += 1) {
       let cover = 0;
-      for (let sy = 0; sy < 4; sy += 1) for (let sx = 0; sx < 4; sx += 1) cover += inside((x + (sx + 0.5) / 4) * scale, (y + (sy + 0.5) / 4) * scale) ? 1 : 0;
+      for (let sy = 0; sy < 4; sy += 1)
+        for (let sx = 0; sx < 4; sx += 1)
+          cover += inside((x + (sx + 0.5) / 4) * scale, (y + (sy + 0.5) / 4) * scale) ? 1 : 0;
       row.push(0x7b, 0x1f, 0xa2, Math.round((cover / 16) * 255));
     }
     rows.push(Buffer.from(row));
@@ -48,7 +61,12 @@ function png(size) {
   header.writeUInt32BE(size, 0);
   header.writeUInt32BE(size, 4);
   header.set([8, 6, 0, 0, 0], 8);
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(Buffer.concat(rows))),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 mkdirSync('icons', { recursive: true });
