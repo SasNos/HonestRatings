@@ -1,12 +1,12 @@
 # Honest Ratings
 
-Chrome extension for Google Maps that puts the bad reviews first. Bad reviews say more than good ones, so instead of the average stars and the number of all reviews it shows how many reviews are bad and how bad a place is, in **negative stars** (1-5 purple stars, fewer is better).
+Chrome extension for Google Maps that puts the bad reviews first. Bad reviews say more than good ones, so instead of the average stars and the number of all reviews it shows how many reviews are bad and how bad a place is, in **negative stars** (1-5 ember stars, fewer is better).
 
 ## What it does
 
 Maps itself stays untouched: no changed dropdown, no changed result list. The extension only adds one overlay at the top right that appears when you open a place:
 
-- negative stars (1-5 purple stars, fewer is better),
+- negative stars (1-5 ember stars, fewer is better),
 - the share of bad reviews with the count, for example `20% (200 / 1,000)` (a `~` marks an estimate, see below),
 - Google's own rating,
 - **all reviews with 1-2 stars**, with or without text, **1 star first, then 2 stars**, in a scrollable list. They appear while they load (the extension scrolls the review list, at most 30 loads), so the worst are in view at once.
@@ -59,7 +59,7 @@ npm run build         # bundles src/ into dist/
 npm run icons         # regenerates icons/
 ```
 
-Code and documentation are English. The design follows Google's Material look (purple accent, 4 px spacing grid, light and dark mode).
+Code and documentation are English. The look is inherited from Spark, which uses the Mber Flow design system: ember accent, warm sand surfaces, the Mber Flow spacing and type scale on a 4 px grid, light and dark mode. The tokens are copied into `src/styles.css` with an `--hr-` prefix (see Spark `CONCEPT.md` section 5 and Mber Flow `docs/STYLEGUIDE.md`).
 
 ## License
 

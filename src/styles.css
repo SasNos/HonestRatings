@@ -1,24 +1,45 @@
-/* Material look matched to Google Maps. All spacing is a multiple of 4px. */
+/* Look inherited from Spark, which takes the Mber Flow design system (Spark CONCEPT.md section 5,
+   Mber Flow docs/STYLEGUIDE.md). The tokens below are copied from Mber Flow's theme.css with an
+   `--hr-` prefix so they cannot clash with the page; rules use only these variables. 4 px grid,
+   2 px only for hairlines and the focus ring. */
 :root {
-  --hr-purple: #7b1fa2;
-  --hr-purple-container: #f3e5f5;
-  --hr-surface: #fff;
-  --hr-on-surface: #1f1f1f;
-  --hr-on-surface-variant: #5f6368;
-  --hr-outline: #dadce0;
-  --hr-hover: rgb(60 64 67 / 8%);
-  --hr-shadow: 0 1px 2px rgb(60 64 67 / 30%), 0 2px 6px 2px rgb(60 64 67 / 15%);
-  --hr-font: 'Google Sans', Roboto, Arial, sans-serif;
+  --hr-space-2: 4px;
+  --hr-space-3: 8px;
+  --hr-space-4: 12px;
+  --hr-space-5: 16px;
+  --hr-fs-sm: 12px;
+  --hr-fs-base: 14px;
+  --hr-fs-lg: 15px;
+  --hr-fs-xl: 18px;
+  --hr-h-bar: 32px;
+  --hr-radius-sm: 6px;
+  --hr-radius-ctl: 8px;
+  --hr-radius: 12px;
+  --hr-font: system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+
+  --hr-ink: #3d434f;
+  --hr-ink-2: #5b6170;
+  --hr-panel: #fbf9f6;
+  --hr-panel-2: #f4efea;
+  --hr-hover: #efe6df;
+  --hr-line: #dcd5cf;
+  --hr-panel-border: rgba(220, 213, 207, 0.6);
+  --hr-accent: #d9743a;
+  --hr-accent-strong: #b4551f;
+  --hr-shadow: 0 1px 2px rgba(61, 67, 79, 0.08), 0 8px 24px rgba(61, 67, 79, 0.12);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --hr-purple: #ce93d8;
-    --hr-purple-container: #3b2a40;
-    --hr-surface: #202124;
-    --hr-on-surface: #e8eaed;
-    --hr-on-surface-variant: #9aa0a6;
-    --hr-outline: #3c4043;
-    --hr-hover: rgb(232 234 237 / 8%);
+    --hr-ink: #ede1d8;
+    --hr-ink-2: #b9b2ab;
+    --hr-panel: #2a2e36;
+    --hr-panel-2: #25282f;
+    --hr-hover: #353a44;
+    --hr-line: #454a55;
+    --hr-panel-border: rgba(69, 74, 85, 0.7);
+    --hr-accent: #f0a35e;
+    --hr-accent-strong: #ffc891;
+    --hr-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -29,10 +50,10 @@
 .hr-star {
   width: 16px;
   height: 16px;
-  fill: var(--hr-purple);
+  fill: var(--hr-accent);
 }
 .hr-star--empty {
-  fill: var(--hr-outline);
+  fill: var(--hr-line);
 }
 
 .hr-collecting [role='main'] {
@@ -41,7 +62,8 @@
 }
 
 /* Right of the map but left of the Maps controls (zoom, location, street view sit in the
-   outermost 64px) and below the account and filter rows (72px), above the attribution (40px). */
+   outermost 64px) and below the account and filter rows (72px), above the attribution (40px).
+   These offsets and the z-index follow the Maps layout, not the token scale. */
 .hr-overlay {
   position: fixed;
   z-index: 1000;
@@ -53,12 +75,13 @@
   max-height: calc(100vh - 112px);
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--hr-surface);
-  color: var(--hr-on-surface);
+  padding: var(--hr-space-5);
+  border: 1px solid var(--hr-panel-border);
+  border-radius: var(--hr-radius);
+  background: var(--hr-panel);
+  color: var(--hr-ink);
   box-shadow: var(--hr-shadow);
-  font: 400 14px/20px var(--hr-font);
+  font: 400 var(--hr-fs-base) / 1.45 var(--hr-font);
 }
 .hr-overlay__header {
   display: flex;
@@ -67,80 +90,93 @@
 }
 .hr-overlay__header h2 {
   margin: 0;
-  font: 500 16px/24px var(--hr-font);
-  color: var(--hr-purple);
+  font: 600 var(--hr-fs-lg) / 1.45 var(--hr-font);
+  color: var(--hr-accent-strong);
 }
 .hr-overlay__close {
-  width: 32px;
-  height: 32px;
+  width: var(--hr-h-bar);
+  height: var(--hr-h-bar);
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--hr-radius-ctl);
   background: none;
-  color: var(--hr-on-surface-variant);
-  font-size: 20px;
-  line-height: 32px;
+  color: var(--hr-ink-2);
+  font-size: var(--hr-fs-xl);
+  line-height: var(--hr-h-bar);
   cursor: pointer;
+  transition: background 0.12s;
 }
 .hr-overlay__close:hover {
   background: var(--hr-hover);
 }
+.hr-overlay__close:focus-visible,
+.hr-review:focus-visible {
+  outline: 2px solid var(--hr-accent);
+  outline-offset: -2px;
+}
 .hr-overlay__place {
-  margin: 4px 0 12px;
-  font-weight: 500;
+  margin: var(--hr-space-2) 0 var(--hr-space-4);
+  font-weight: 600;
 }
 .hr-overlay__summary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--hr-space-3);
+  margin-bottom: var(--hr-space-4);
 }
 .hr-overlay__figure {
   margin: 0;
-  font-weight: 500;
+  font-weight: 600;
 }
 .hr-overlay__note {
   margin: 0;
-  color: var(--hr-on-surface-variant);
+  color: var(--hr-ink-2);
 }
 .hr-overlay__debug {
-  margin: 8px 0 0;
-  color: var(--hr-on-surface-variant);
-  font-size: 12px;
-  line-height: 16px;
+  margin: var(--hr-space-3) 0 0;
+  color: var(--hr-ink-2);
+  font-size: var(--hr-fs-sm);
 }
 .hr-review {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--hr-purple-container);
+  margin-top: var(--hr-space-3);
+  padding: var(--hr-space-4);
+  border-radius: var(--hr-radius-sm);
+  background: var(--hr-panel-2);
   cursor: pointer;
+  transition: background 0.12s;
 }
-.hr-review:hover,
-.hr-review:focus-visible {
-  outline: 2px solid var(--hr-purple);
-  outline-offset: -2px;
+.hr-review:hover {
+  background: var(--hr-hover);
 }
 .hr-review__text--empty {
-  color: var(--hr-on-surface-variant);
+  color: var(--hr-ink-2);
   font-style: italic;
 }
+/* Marks the review in the Maps panel after a click in the overlay. */
 .hr-flash {
-  outline: 3px solid var(--hr-purple);
-  outline-offset: 4px;
-  border-radius: 12px;
-  transition: outline-color 0.3s;
+  outline: 2px solid var(--hr-accent);
+  outline-offset: var(--hr-space-2);
+  border-radius: var(--hr-radius);
+  transition: outline-color 0.2s;
 }
 .hr-review__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  font-weight: 500;
+  gap: var(--hr-space-3);
+  font-weight: 600;
 }
 .hr-review__text {
-  margin: 8px 0 0;
+  margin: var(--hr-space-3) 0 0;
   display: -webkit-box;
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hr-overlay__close,
+  .hr-review,
+  .hr-flash {
+    transition: none;
+  }
 }
