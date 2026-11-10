@@ -46,8 +46,18 @@ export function createApp(doc = document, collectOptions = {}) {
   // The newest result of the open place, for the "Load more" button.
   let latest = null;
 
+  // Work that is still running (opening a place, "Load more"), so a host or a test can wait until it is done.
+  const pending = new Set();
+  function track(promise) {
+    const done = () => pending.delete(promise);
+    pending.add(promise);
+    promise.then(done, done);
+    return promise;
+  }
+  const onMore = () => track(loadMore());
+
   // "Load more": loads ten more negative reviews than are shown now.
-  async function onMore() {
+  async function loadMore() {
     const { key, title, result } = latest;
     const mine = run;
     showOverlay({ title, ...result, loading: true, onReview, onMore });
@@ -136,10 +146,10 @@ export function createApp(doc = document, collectOptions = {}) {
     place = key;
     run += 1;
     removeOverlay();
-    if (key) openPlace(key);
+    if (key) track(openPlace(key));
   }
 
-  return { scan };
+  return { scan, idle: () => Promise.allSettled([...pending]) };
 }
 
 export function start(doc = document, win = window) {

@@ -3,7 +3,7 @@ import { createApp, start } from '../src/app.js';
 
 const FAST = { timeout: 30, interval: 5, settle: 0, restore: 0 };
 // vi.waitFor waits 1 s by default, too little for a full collection on a busy machine (coverage, parallel files).
-const SLOW = { timeout: 3000 };
+const SLOW = { timeout: 10000 };
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -11,6 +11,17 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+});
+
+// Every app of a test finishes its work before the next test starts, so a late result cannot land in the next page.
+const apps = [];
+function newApp(...args) {
+  const app = createApp(...args);
+  apps.push(app);
+  return app;
+}
+afterEach(async () => {
+  await Promise.all(apps.splice(0).map((app) => app.idle()));
 });
 
 describe('place overlay', () => {
@@ -50,7 +61,7 @@ describe('place overlay', () => {
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
       hiddenWhileSwitching = document.documentElement.classList.contains('hr-collecting');
     });
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Loading');
     await vi.waitFor(() => expect(overlayText()).toContain('25% (40 / 160)'), SLOW);
@@ -62,7 +73,7 @@ describe('place overlay', () => {
   it('does not restart when the title changes while tabs switch, and caches the result', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     app.scan();
     document.querySelector('h1').textContent = 'Something else';
     app.scan();
@@ -78,7 +89,8 @@ describe('place overlay', () => {
   it('waits for the panel of the new place so no numbers of the previous place are shown', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    const app = createApp(document, FAST);
+    // The new panel comes after 10 ms; the app must still be waiting for it then, even on a busy machine.
+    const app = newApp(document, { ...FAST, timeout: 2000 });
     app.scan();
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     go('/maps/place/Bar/@1,2,3z');
@@ -98,7 +110,7 @@ describe('place overlay', () => {
   it('shows a cached place again, with the URL name when the panel has no title yet', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     app.scan();
     await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     go('/maps/search/x');
@@ -112,10 +124,10 @@ describe('place overlay', () => {
   it('works with the default timeouts', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    createApp(document).scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), { timeout: 6000 });
+    newApp(document).scan();
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     // let the collector finish, so it does not run into the next test
-    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'), { timeout: 6000 });
+    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'), SLOW);
   });
   it('shows the reviews while they load and shows one in Google Maps on click', async () => {
     go('/maps/place/Cafe/@1,2,3z');
@@ -127,7 +139,7 @@ describe('place overlay', () => {
       snapshots.push(document.getElementById('hr-overlay')?.textContent ?? ''),
     );
     observer.observe(document.body, { childList: true, subtree: true });
-    createApp(document, FAST).scan();
+    newApp(document, FAST).scan();
     await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'), SLOW);
     observer.disconnect();
     expect(snapshots.some((text) => text.includes('Loading the negative reviews') && text.includes('Bad'))).toBe(true);
@@ -172,15 +184,15 @@ describe('place overlay', () => {
 
     it('loads more negative reviews on request and shows the new count', async () => {
       const state = more();
-      createApp(document, FAST).scan();
-      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      newApp(document, FAST).scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
       const before = document.querySelectorAll('.hr-review').length;
       document.querySelector('.hr-overlay__more').click();
       await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), {
-        timeout: 3000,
+        ...SLOW,
       });
       // 41 loaded now, the histogram knows 40: nothing left to load
-      await vi.waitFor(() => expect(overlayText()).not.toContain('Loading the negative reviews'), { timeout: 3000 });
+      await vi.waitFor(() => expect(overlayText()).not.toContain('Loading the negative reviews'), SLOW);
       expect(document.querySelector('.hr-overlay__more')).toBeNull();
       expect(state.loads).toBeGreaterThan(0);
       expect(overlayText()).toContain('41 negative reviews (1-2 stars), 1 star first');
@@ -188,16 +200,16 @@ describe('place overlay', () => {
     it('says so instead of offering the button again when loading more brings nothing, also from the cache', async () => {
       go('/maps/place/Cafe/@1,2,3z');
       placePage('Cafe');
-      const app = createApp(document, FAST);
+      const app = newApp(document, FAST);
       app.scan();
-      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
       const shown = document.querySelectorAll('.hr-review').length;
       go('/maps/search/x');
       app.scan();
       go('/maps/place/Cafe/@1,2,3z');
       app.scan(); // from the cache, the button is still there
       document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(overlayText()).toMatch(/\d+\/\d+ results loaded/), { timeout: 3000 });
+      await vi.waitFor(() => expect(overlayText()).toMatch(/\d+\/\d+ results loaded/), SLOW);
       expect(document.querySelector('.hr-overlay__more')).toBeNull();
       expect(document.querySelectorAll('.hr-review')).toHaveLength(shown);
       go('/maps/search/x');
@@ -208,9 +220,9 @@ describe('place overlay', () => {
     });
     it('drops the result when the user leaves the place meanwhile', async () => {
       more();
-      const app = createApp(document, FAST);
+      const app = newApp(document, FAST);
       app.scan();
-      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
       document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
         go('/maps/search/x');
         app.scan();
@@ -223,7 +235,7 @@ describe('place overlay', () => {
   it('drops a run that became stale while the reviews were collected', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     // The user leaves the place right when the collector opens the reviews tab.
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
       go('/maps/search/x');
@@ -236,14 +248,14 @@ describe('place overlay', () => {
   it('gives up waiting when the panel never shows the place, and copes with a broken URL name', async () => {
     go('/maps/place/Ghost%E0%A4%A/@1,2,3z');
     placePage('Something else');
-    createApp(document, FAST).scan();
+    newApp(document, FAST).scan();
     expect(overlayText()).toContain('Ghost%E0%A4%A');
     await vi.waitFor(() => expect(overlayText()).toContain('Something else'), SLOW);
   });
   it('ignores a stale run when another place opens', async () => {
     go('/maps/place/Cafe/@1,2,3z');
     placePage('Cafe');
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     app.scan();
     go('/maps/place/Bar/@1,2,3z');
     document.querySelector('h1').textContent = 'Bar';
@@ -255,7 +267,7 @@ describe('place overlay', () => {
     go('/maps/place/Real%20Place+Two/@1,2,3z');
     document.body.innerHTML =
       '<div role="main"><div role="feed"><h1>Results</h1></div><h1>Sponsored</h1><h1>Real Place</h1><h1> </h1></div>';
-    const app = createApp(document, FAST);
+    const app = newApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Real Place');
     go('/maps/place/Other%20Place+Two/@1,2,3z');
@@ -267,8 +279,20 @@ describe('place overlay', () => {
   it('works without a main region, a rating or a reviews tab', async () => {
     go('/maps/place/Lonely/@1,2,3z');
     document.body.innerHTML = '<h1>Lonely</h1>';
-    createApp(document, FAST).scan();
+    newApp(document, FAST).scan();
     await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'), SLOW);
+  });
+});
+
+describe('idle', () => {
+  it('resolves once the place is open and at once when nothing runs', async () => {
+    window.history.replaceState({}, '', '/maps/place/Nowhere/@1,2,3z');
+    const app = createApp(document, FAST);
+    await app.idle();
+    app.scan();
+    await app.idle();
+    expect(document.getElementById('hr-overlay').textContent).toContain('Nowhere');
+    window.history.replaceState({}, '', '/');
   });
 });
 
