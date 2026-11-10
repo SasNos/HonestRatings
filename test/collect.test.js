@@ -50,6 +50,13 @@ describe('waitFor', () => {
     expect(await waitFor(() => (++calls > 2 ? 'later' : null), FAST)).toBe('later');
     expect(await waitFor(() => null, { timeout: 20, interval: 5 })).toBeNull();
   });
+  it('gives up at once when the run is cancelled', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let calls = 0;
+    expect(await waitFor(() => ++calls, { signal: controller.signal })).toBeNull();
+    expect(calls).toBe(0);
+  });
   it('uses its defaults', async () => {
     vi.useFakeTimers();
     const pending = waitFor(() => null);
@@ -222,35 +229,60 @@ describe('loadMoreReviews', () => {
     const state = scrolling((count, area) =>
       area.insertAdjacentHTML('beforeend', review(`x${count}`, 1, `More ${count}`)),
     );
-    const reviews = await loadMoreReviews(document, FAST, 4, (list) => seen.push(list.length));
+    const { reviews, complete } = await loadMoreReviews(document, FAST, 4, (list) => seen.push(list.length));
     expect(reviews.map((r) => r.text)).toEqual(['Bad', 'More 1', 'More 2', 'More 3']);
+    expect(complete).toBe(true);
     expect(state.loads).toBe(3);
     expect(seen).toEqual([2, 3, 4]);
     expect(state.clicks).toEqual(['reviews', 'sort', 'lowest', 'overview']);
   });
   it('works without a progress callback and stops above the bad reviews', async () => {
     const state = scrolling((count, area) => area.insertAdjacentHTML('beforeend', review(`y${count}`, 4, 'Fine')));
-    const reviews = await loadMoreReviews(document, FAST, 99);
+    const { reviews, complete } = await loadMoreReviews(document, FAST, 99);
     expect(reviews.map((r) => r.text)).toEqual(['Bad']);
+    expect(complete).toBe(true);
     expect(state.loads).toBe(1);
   });
   it('gives up without a reviews tab and skips the sort menu when signed out', async () => {
     panel({ withTabs: false });
-    expect(await loadMoreReviews(document, FAST, 5)).toEqual([]);
+    expect(await loadMoreReviews(document, FAST, 5)).toEqual({ reviews: [], complete: false });
     const state = scrolling(() => {});
     document.body.insertAdjacentHTML('beforeend', '<a href="https://accounts.google.com/ServiceLogin">Sign in</a>');
-    expect(await loadMoreReviews(document, FAST, 5)).toEqual([]);
+    // Maps brought nothing more on two tries: the list is complete as it is.
+    expect(await loadMoreReviews(document, FAST, 5)).toEqual({ reviews: [], complete: true });
     expect(state.clicks).not.toContain('sort');
   });
   it('uses the default timeouts and restores the scroll position', async () => {
     const state = scrolling(() => {});
-    const reviews = await loadMoreReviews(document, {}, 1);
+    const { reviews } = await loadMoreReviews(document, {}, 1);
     expect(reviews.map((r) => r.text)).toEqual(['Bad']);
     expect(state.loads).toBe(0);
   }, 20000);
   it('does not scroll or restore anything without a scrollable panel', async () => {
     panel();
-    expect((await loadMoreReviews(document, FAST, 5)).map((r) => r.text)).toEqual(['Bad']);
+    const { reviews, complete } = await loadMoreReviews(document, FAST, 5);
+    expect(reviews.map((r) => r.text)).toEqual(['Bad']);
+    // Without scrolling nothing says whether Maps has more.
+    expect(complete).toBe(false);
+  });
+  it('is not complete when the load limit stops it; the limit grows with the reviews to get past', async () => {
+    const state = scrolling((count, area) =>
+      area.insertAdjacentHTML('beforeend', `<div data-review-id="z${count}"><span class="wiI7pd">x</span></div>`),
+    );
+    const { complete } = await loadMoreReviews(document, FAST, 25);
+    expect(complete).toBe(false);
+    expect(state.loads).toBe(63); // 60 + 25 / 10 rounded up
+  });
+  it('stops when the run is cancelled and leaves the panel alone', async () => {
+    const controller = new AbortController();
+    const state = scrolling((count, area) => {
+      area.insertAdjacentHTML('beforeend', review(`c${count}`, 2, `More ${count}`));
+      if (count === 2) controller.abort();
+    });
+    const { complete } = await loadMoreReviews(document, { ...FAST, signal: controller.signal }, 30);
+    expect(complete).toBe(false);
+    expect(state.loads).toBe(2);
+    expect(state.clicks).not.toContain('overview');
   });
 });
 

@@ -3,6 +3,8 @@ import { renderStars } from './stars.js';
 const ID = 'hr-overlay';
 // "Load more" asks for this many more reviews per click.
 export const LOAD_STEP = 10;
+// Space above a review the overlay scrolls to, in px: the --hr-space-3 token (a test keeps them equal).
+export const REVIEW_GAP = 8;
 
 export function removeOverlay() {
   document.getElementById(ID)?.remove();
@@ -139,7 +141,7 @@ export function showOverlay({
     );
     if (missing) done.title = 'Maps lists no more of them; the rest may be removed or not listed.';
     panel.append(done);
-  } else if (missing) {
+  } else if (missing && !exhausted) {
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'hr-overlay__more';
@@ -168,6 +170,6 @@ export function showOverlay({
   panel.scrollTop = scrollTop;
   // After "Load more": bring the first newly loaded review to the top of the list.
   const first = scrollToReview === null ? null : panel.querySelectorAll('.hr-review')[scrollToReview];
-  if (first) panel.scrollTop = first.offsetTop - 8;
+  if (first) panel.scrollTop = first.offsetTop - REVIEW_GAP;
   return panel;
 }

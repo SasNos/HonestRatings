@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderStars } from '../src/ui/stars.js';
-import { removeOverlay, showOverlay } from '../src/ui/overlay.js';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { REVIEW_GAP, removeOverlay, showOverlay } from '../src/ui/overlay.js';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -169,9 +171,14 @@ describe('overlay', () => {
     expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).not.toContain(
       'results loaded',
     );
-    expect(showOverlay({ title: 'A', summary: exact, reviews: [], exhausted: true }).textContent).not.toContain(
-      'results loaded',
-    );
+    const emptyDone = showOverlay({ title: 'A', summary: exact, reviews: [], exhausted: true });
+    expect(emptyDone.textContent).not.toContain('results loaded');
+    // Loading more already brought nothing: do not offer the same load again.
+    expect(emptyDone.querySelector('.hr-overlay__more')).toBeNull();
+  });
+  it('keeps the gap above a scrolled-to review equal to the --hr-space-3 token', () => {
+    const tokens = readFileSync(resolve(process.cwd(), 'src/tokens.css'), 'utf8');
+    expect(`${REVIEW_GAP}px`).toBe(tokens.match(/--hr-space-3: ([^;]+);/)[1]);
   });
   it('scrolls the first newly loaded review to the top after Load more', () => {
     Object.defineProperty(HTMLElement.prototype, 'offsetTop', {

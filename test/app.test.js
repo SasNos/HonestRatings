@@ -200,6 +200,9 @@ describe('place overlay', () => {
     it('says so instead of offering the button again when loading more brings nothing, also from the cache', async () => {
       go('/maps/place/Cafe/@1,2,3z');
       placePage('Cafe');
+      // The list scrolls, but Maps brings nothing more.
+      Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
       const app = newApp(document, FAST);
       app.scan();
       await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
@@ -217,6 +220,114 @@ describe('place overlay', () => {
       go('/maps/place/Cafe/@1,2,3z');
       app.scan(); // the cache remembers that nothing more can be loaded
       expect(overlayText()).toMatch(/\d+\/\d+ results loaded/);
+    });
+    it('keeps the button when a pass stopped before it could tell (no scroll area)', async () => {
+      go('/maps/place/Cafe/@1,2,3z');
+      placePage('Cafe');
+      const app = newApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
+      document.querySelector('.hr-overlay__more').click();
+      await app.idle();
+      expect(document.querySelector('.hr-overlay__more').disabled).toBe(false);
+      expect(overlayText()).not.toMatch(/results loaded/);
+    });
+    it('does not cache an empty result of Load more, so a revisit collects again', async () => {
+      go('/maps/place/Cafe/@1,2,3z');
+      placePage('Cafe');
+      // Sorting brings no review at all, although the histogram counts 40 negative ones.
+      document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+        document.getElementById('area').innerHTML = '';
+      });
+      Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+      const app = newApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
+      document.querySelector('.hr-overlay__more').click();
+      await app.idle();
+      expect(overlayText()).toContain('No negative reviews found.');
+      expect(document.querySelector('.hr-overlay__more')).toBeNull();
+      go('/maps/search/x');
+      app.scan();
+      go('/maps/place/Cafe/@1,2,3z');
+      app.scan();
+      expect(overlayText()).toContain('Loading');
+    });
+    it('ignores clicks on reviews while it drives the Maps list', async () => {
+      more();
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      const app = newApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
+      document.querySelector('.hr-overlay__more').click();
+      document.querySelector('.hr-review').click();
+      await app.idle();
+      expect(scrollIntoView).not.toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+      expect(document.querySelector('.hr-flash')).toBeNull();
+      delete window.HTMLElement.prototype.scrollIntoView;
+    });
+    it('scrolls to the first new review even when new reviews sort before the old ones', async () => {
+      go('/maps/place/Cafe/@1,2,3z');
+      placePage('Cafe');
+      const area = () => document.getElementById('area');
+      // The first pass shows one 1-star and one 2-star review; Load more brings ten new 1-star reviews.
+      document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
+        area().insertAdjacentHTML(
+          'beforeend',
+          '<div data-review-id="old"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Old</span></div>',
+        );
+      });
+      const state = { phase: 1, loads: 0 };
+      Object.defineProperty(document.body, 'scrollHeight', { value: 100, configurable: true });
+      Object.defineProperty(document.body, 'clientHeight', { value: 10, configurable: true });
+      Object.defineProperty(document.body, 'scrollTop', {
+        configurable: true,
+        get: () => 0,
+        set(value) {
+          if (value > 0 && state.phase === 2 && state.loads < 10) {
+            state.loads += 1;
+            area().insertAdjacentHTML(
+              'beforeend',
+              `<div data-review-id="n${state.loads}"><span role="img" aria-label="1 star"></span><span class="wiI7pd">New ${state.loads}</span></div>`,
+            );
+          }
+        },
+      });
+      Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+        configurable: true,
+        get() {
+          return this.classList.contains('hr-review') ? 100 * [...this.parentNode.children].indexOf(this) : 0;
+        },
+      });
+      const app = newApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
+      state.phase = 2;
+      document.querySelector('.hr-overlay__more').click();
+      await app.idle();
+      const cards = [...document.querySelectorAll('.hr-review')];
+      expect(cards).toHaveLength(12);
+      const firstNew = cards.findIndex((card) => card.textContent.includes('New 1'));
+      expect(firstNew).toBe(1); // Bad (1 star), then the new 1-star reviews, Old (2 stars) last
+      expect(document.getElementById('hr-overlay').scrollTop).toBe(cards[firstNew].offsetTop - 8);
+      delete HTMLElement.prototype.offsetTop;
+    });
+    it('leaves the next place alone when a Load more is cancelled', async () => {
+      more();
+      const app = newApp(document, FAST);
+      app.scan();
+      await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
+      let overviewClicks = 0;
+      document.querySelectorAll('button[role="tab"]')[0].addEventListener('click', () => (overviewClicks += 1));
+      document.querySelector('.hr-overlay__more').click();
+      go('/maps/search/x');
+      app.scan(); // the user leaves while Load more runs
+      await app.idle();
+      expect(overviewClicks).toBe(0);
+      expect(document.documentElement.classList.contains('hr-collecting')).toBe(false);
+      expect(document.getElementById('hr-overlay')).toBeNull();
     });
     it('drops the result when the user leaves the place meanwhile', async () => {
       more();

@@ -29,7 +29,8 @@ function ratingOf(scope) {
 // overlay with the negative reviews of the place that is open.
 export function createApp(doc = document, collectOptions = {}) {
   let place = null;
-  let run = 0;
+  // Cancels the work for the place that was open before (scan() replaces it for every new place).
+  let controller = new AbortController();
   const cache = new Map();
 
   // Ads put a "Sponsored" h1 before the title; the results list has its own h1s.
@@ -40,8 +41,22 @@ export function createApp(doc = document, collectOptions = {}) {
     return titles.at(-1)?.textContent.trim() || null;
   }
 
-  // A click on a review shows it in the Google Maps panel.
-  const onReview = (review) => revealReview(doc, review.id, collectOptions);
+  // Hides the Maps panel while a collection switches its tabs, so it does not flicker. Counted, because a
+  // cancelled run may still be finishing while the next one has started.
+  let collecting = 0;
+  function hidePanel() {
+    collecting += 1;
+    doc.documentElement.classList.add('hr-collecting');
+  }
+  function showPanel() {
+    collecting -= 1;
+    if (collecting === 0) doc.documentElement.classList.remove('hr-collecting');
+  }
+
+  // A click on a review shows it in the Google Maps panel; not while a collection drives the same list.
+  const onReview = (review) => {
+    if (collecting === 0) revealReview(doc, review.id, collectOptions);
+  };
 
   // The newest result of the open place, for the "Load more" button.
   let latest = null;
@@ -49,7 +64,7 @@ export function createApp(doc = document, collectOptions = {}) {
   // Work that is still running (opening a place, "Load more"), so a host or a test can wait until it is done.
   let tail = Promise.resolve();
   function track(promise) {
-    tail = Promise.allSettled([tail, promise]);
+    tail = Promise.allSettled([tail, promise]).then(() => undefined);
     return promise;
   }
   const onMore = () => track(loadMore());
@@ -57,26 +72,31 @@ export function createApp(doc = document, collectOptions = {}) {
   // "Load more": loads ten more negative reviews than are shown now.
   async function loadMore() {
     const { key, title, result } = latest;
-    const mine = run;
+    const { signal } = controller;
     showOverlay({ title, ...result, loading: true, onReview, onMore });
-    doc.documentElement.classList.add('hr-collecting');
-    let reviews;
+    hidePanel();
+    let more;
     try {
-      reviews = await loadMoreReviews(doc, collectOptions, result.reviews.length + LOAD_STEP, (list) => {
+      more = await loadMoreReviews(doc, { ...collectOptions, signal }, result.reviews.length + LOAD_STEP, (list) => {
         // Maps starts the list from the beginning: show it again only once it is longer.
-        if (mine === run && list.length > result.reviews.length)
+        if (!signal.aborted && list.length > result.reviews.length)
           showOverlay({ title, ...result, reviews: list, loading: true, onReview, onMore });
       });
     } finally {
-      doc.documentElement.classList.remove('hr-collecting');
+      showPanel();
     }
-    if (mine !== run) return;
-    // No growth means Maps lists no more reviews than these.
-    const grew = reviews.length > result.reviews.length;
-    const next = { ...result, reviews: grew ? reviews : result.reviews, exhausted: !grew };
+    if (signal.aborted) return;
+    const grew = more.reviews.length > result.reviews.length;
+    // Only a complete pass without growth means Maps lists no more reviews than these; a pass that stopped
+    // early (load limit, no scroll area) keeps the button.
+    const next = { ...result, reviews: grew ? more.reviews : result.reviews, exhausted: !grew && more.complete };
     latest = { key, title, result: next };
-    cache.set(key, next);
-    showOverlay({ title, ...next, onReview, onMore, scrollToReview: grew ? result.reviews.length : null });
+    // An empty result is not cached (see openPlace).
+    if (next.reviews.length > 0) cache.set(key, next);
+    // Sorted by stars, new reviews can land before old ones: scroll to the first one that was not shown.
+    const shown = new Set(result.reviews.map((review) => review.id));
+    const firstNew = grew ? next.reviews.findIndex((review) => !shown.has(review.id)) : -1;
+    showOverlay({ title, ...next, onReview, onMore, scrollToReview: firstNew < 0 ? null : firstNew });
   }
 
   function summaryOf(histogram) {
@@ -85,12 +105,14 @@ export function createApp(doc = document, collectOptions = {}) {
   }
 
   async function openPlace(key) {
-    const mine = ++run;
+    const { signal } = controller;
+    const options = { ...collectOptions, signal };
     const urlTitle = safeDecode(key).replace(/\+/g, ' ');
     const cached = cache.get(key);
     if (cached) {
       latest = { key, title: panelTitle() || urlTitle, result: cached };
-      return showOverlay({ title: latest.title, ...cached, onReview, onMore });
+      showOverlay({ title: latest.title, ...cached, onReview, onMore });
+      return;
     }
     showOverlay({ title: urlTitle, loading: true, onReview });
     // The URL changes before the panel does: wait until the panel shows this place, or give
@@ -105,25 +127,24 @@ export function createApp(doc = document, collectOptions = {}) {
         title = shownTitle;
         return true;
       },
-      { ...collectOptions, timeout: Math.min(collectOptions.timeout ?? 4000, 3000) },
+      { ...options, timeout: Math.min(collectOptions.timeout ?? 4000, 3000) },
     );
-    if (mine !== run) return;
+    if (signal.aborted) return;
     title = title || panelTitle() || urlTitle;
     // The overview already lists the star histogram, so the numbers show at once.
     const first = summaryOf(parseHistogram(doc));
     showOverlay({ title, summary: first, loading: true, onReview });
-    // Hide the panel while the collector switches tabs, so it does not flicker.
-    doc.documentElement.classList.add('hr-collecting');
+    hidePanel();
     let data;
     try {
       // Show the reviews as they load, so the worst are in view at once.
-      data = await collect(doc, collectOptions, (reviews) => {
-        if (mine === run) showOverlay({ title, summary: first, reviews, loading: true, onReview });
+      data = await collect(doc, options, (reviews) => {
+        if (!signal.aborted) showOverlay({ title, summary: first, reviews, loading: true, onReview });
       });
     } finally {
-      doc.documentElement.classList.remove('hr-collecting');
+      showPanel();
     }
-    if (mine !== run) return;
+    if (signal.aborted) return;
     const result = {
       summary: summaryOf(data?.histogram ?? null),
       reviews: data?.reviews ?? [],
@@ -142,7 +163,8 @@ export function createApp(doc = document, collectOptions = {}) {
     const key = doc.location.pathname.match(/\/maps\/place\/([^/]+)/)?.[1] ?? null;
     if (key === place) return;
     place = key;
-    run += 1;
+    controller.abort();
+    controller = new AbortController();
     removeOverlay();
     if (key) track(openPlace(key));
   }

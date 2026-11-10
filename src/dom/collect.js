@@ -1,16 +1,20 @@
 import { SEL, SORT_LOWEST_INDEX, SORT_LABEL, REVIEWS_TAB } from './selectors.js';
 import { parseHistogram, parseReview, reviewElements, negativeReviews } from './parse.js';
-import { BAD_MAX_STARS } from '../scoring.js';
+import { BAD_MAX_STARS, badCount } from '../scoring.js';
 
 // Popular places have hundreds of negative reviews: allow many scroll loads.
 const MAX_REVIEW_LOADS = 30;
 const MAX_REVEAL_LOADS = 30;
 const MAX_MORE_LOADS = 60;
+// Maps loads about ten reviews per scroll step.
+const REVIEWS_PER_LOAD = 10;
 
-export function waitFor(check, { timeout = 4000, interval = 100 } = {}) {
+// Polls check() until it returns something, the timeout passes (null) or the run is cancelled (null).
+export function waitFor(check, { timeout = 4000, interval = 100, signal = null } = {}) {
   return new Promise((resolve) => {
     const started = Date.now();
     const tick = () => {
+      if (signal?.aborted) return resolve(null);
       const value = check();
       if (value) return resolve(value);
       if (Date.now() - started >= timeout) return resolve(null);
@@ -70,13 +74,15 @@ async function sortLowest(doc, sort, options) {
 }
 
 // Scrolls the review list to load more until done() is true, nothing new arrives,
-// or the load limit is hit. onLoad() runs after every successful load.
+// the load limit is hit or the run is cancelled. onLoad() runs after every successful load.
 // Maps can take a few seconds per page, so a load gets time, and only two misses in a
 // row end the loop (the second try scrolls up a little first to trigger the loader again).
+// Returns true when the list is complete: done() is true or Maps brought nothing more.
 async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {} }) {
   let misses = 0;
   for (let tries = 0; box && tries < maxLoads; tries += 1) {
-    if (done()) break;
+    if (options.signal?.aborted) return false;
+    if (done()) return true;
     const elements = reviewElements(doc);
     const before = elements.length;
     // Scrolling the last review into view moves whichever container really scrolls, which
@@ -89,14 +95,37 @@ async function scrollUntil(doc, box, options, { done, maxLoads, onLoad = () => {
       ...options,
       timeout: Math.min(options.timeout ?? 4000, 4000),
     });
+    if (options.signal?.aborted) return false;
     if (reviewElements(doc).length === before) {
       misses += 1;
-      if (misses >= 2) break;
+      if (misses >= 2) return true;
       box.scrollTop = Math.max(0, box.scrollHeight - box.clientHeight - 300);
     } else {
       misses = 0;
       onLoad();
     }
+  }
+  return done();
+}
+
+// Clicks the reviews tab and remembers what restoreTab() needs to put the panel back.
+function openReviewsTab(doc, reviewsTab) {
+  const previous = [...doc.querySelectorAll(SEL.tab)].find((tab) => tab.getAttribute('aria-selected') === 'true');
+  const box = scroller(reviewsTab);
+  const view = { reviewsTab, previous, box, scrollTop: box?.scrollTop };
+  reviewsTab.click();
+  return view;
+}
+
+// Puts the panel back as the user left it: the previous tab and its scroll position. A cancelled run leaves
+// the panel alone, because the user is at another place by now.
+async function restoreTab({ reviewsTab, previous, box, scrollTop }, options) {
+  if (options.signal?.aborted) return;
+  if (previous && previous !== reviewsTab) previous.click();
+  if (box) {
+    // Maps re-renders the overview after the tab switch and resets the scroll position.
+    await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
+    box.scrollTop = scrollTop;
   }
 }
 
@@ -110,13 +139,11 @@ function pastNegatives(doc) {
 // Opens the reviews tab, sorts by lowest rating and reads the histogram and every
 // negative review (1-2 stars), worst first. onProgress gets the list after each load.
 // The previous tab is restored afterwards so the panel looks as the user left it.
+// options.signal cancels the run (the user went to another place); it then stops early and touches nothing more.
 export async function collect(doc, options = {}, onProgress = () => {}) {
   const reviewsTab = findReviewsTab(doc);
   if (!reviewsTab) return null;
-  const previous = [...doc.querySelectorAll(SEL.tab)].find((tab) => tab.getAttribute('aria-selected') === 'true');
-  const box = scroller(reviewsTab);
-  const scrollTop = box?.scrollTop;
-  reviewsTab.click();
+  const view = openReviewsTab(doc, reviewsTab);
   const histogram = await waitFor(() => parseHistogram(doc), options);
   const sort = await waitFor(() => findSort(doc), { ...options, timeout: Math.min(options.timeout ?? 4000, 2000) });
   const signedOut = Boolean(doc.querySelector(SEL.signIn));
@@ -127,8 +154,8 @@ export async function collect(doc, options = {}, onProgress = () => {}) {
   await waitFor(() => doc.querySelector(SEL.review), options);
   onProgress(negativeReviews(doc));
   // The histogram says how many 1-2 star reviews exist: stop once all of them are loaded.
-  const expected = histogram ? histogram[1] + histogram[2] : Infinity;
-  await scrollUntil(doc, box, options, {
+  const expected = histogram ? badCount(histogram) : Infinity;
+  await scrollUntil(doc, view.box, options, {
     done: () => pastNegatives(doc) || negativeReviews(doc).length >= expected,
     maxLoads: MAX_REVIEW_LOADS,
     onLoad: () => onProgress(negativeReviews(doc)),
@@ -138,41 +165,31 @@ export async function collect(doc, options = {}, onProgress = () => {}) {
   debug.reviewElements = parsed.length;
   debug.withStars = parsed.filter((review) => review.stars !== null).length;
   debug.withText = parsed.filter((review) => review.text).length;
-  if (previous && previous !== reviewsTab) previous.click();
-  if (box) {
-    // Maps re-renders the overview after the tab switch and resets the scroll position.
-    await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
-    box.scrollTop = scrollTop;
-  }
+  await restoreTab(view, options);
   return { histogram, reviews, signedOut, debug };
 }
 
 // Loads more negative reviews on request ("Load more"): opens the reviews tab again
 // (Maps starts the list from the beginning), sorts by lowest rating and scrolls until
 // `wanted` negative reviews are loaded, a review above the bad ones shows up, or the
-// limit is hit. Then the previous tab is restored. Returns the negative reviews.
+// limit is hit. Then the previous tab is restored. Returns the negative reviews and whether the list is
+// complete (`complete: false` when the limit, a cancel or a missing scroll area stopped it early).
 export async function loadMoreReviews(doc, options, wanted, onProgress = () => {}) {
   const reviewsTab = findReviewsTab(doc);
-  if (!reviewsTab) return [];
-  const previous = [...doc.querySelectorAll(SEL.tab)].find((tab) => tab.getAttribute('aria-selected') === 'true');
-  const box = scroller(reviewsTab);
-  const scrollTop = box?.scrollTop;
-  reviewsTab.click();
+  if (!reviewsTab) return { reviews: [], complete: false };
+  const view = openReviewsTab(doc, reviewsTab);
   const sort = await waitFor(() => findSort(doc), { ...options, timeout: Math.min(options.timeout ?? 4000, 2000) });
   if (sort && !doc.querySelector(SEL.signIn)) await sortLowest(doc, sort, options);
   await waitFor(() => doc.querySelector(SEL.review), options);
-  await scrollUntil(doc, box, options, {
+  const complete = await scrollUntil(doc, view.box, options, {
     done: () => pastNegatives(doc) || negativeReviews(doc).length >= wanted,
-    maxLoads: MAX_MORE_LOADS,
+    // The list starts from the top again, so the limit grows with the reviews to get past.
+    maxLoads: MAX_MORE_LOADS + Math.ceil(wanted / REVIEWS_PER_LOAD),
     onLoad: () => onProgress(negativeReviews(doc)),
   });
   const reviews = negativeReviews(doc);
-  if (previous && previous !== reviewsTab) previous.click();
-  if (box) {
-    await new Promise((resolve) => setTimeout(resolve, options.restore ?? 300));
-    box.scrollTop = scrollTop;
-  }
-  return reviews;
+  await restoreTab(view, options);
+  return { reviews, complete };
 }
 
 // Shows one review in the Google Maps panel: opens the reviews tab, sorts by lowest
