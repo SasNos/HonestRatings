@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, start } from '../src/app.js';
 
 const FAST = { timeout: 30, interval: 5, settle: 0, restore: 0 };
-// vi.waitFor waits 1 s by default, too little for a full collection on a busy machine (coverage, parallel files).
+// The app tests run whole collections with real timers. vi.waitFor waits 1 s by default and a test 5 s, too little
+// on a busy machine (coverage, parallel files); this file allows more.
 const SLOW = { timeout: 10000 };
+vi.setConfig({ testTimeout: 30000 });
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -188,9 +190,7 @@ describe('place overlay', () => {
       await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), SLOW);
       const before = document.querySelectorAll('.hr-review').length;
       document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), {
-        ...SLOW,
-      });
+      await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), SLOW);
       // 41 loaded now, the histogram knows 40: nothing left to load
       await vi.waitFor(() => expect(overlayText()).not.toContain('Loading the negative reviews'), SLOW);
       expect(document.querySelector('.hr-overlay__more')).toBeNull();

@@ -159,3 +159,5 @@ Where things are:
 1. Verify in a signed-in Maps session: sorting by lowest rating, the review markup, loading by scrolling, the click to the review and the flash; fix selectors if needed.
 2. Integration into Spark as a built-in tool (Spark 0.4), designed in `docs/SPARK.md`; nothing built in Spark yet.
 3. Spark has no way yet to give the overlay its fonts (the `chrome-extension://` font URLs only work in Chrome); until then it uses the system font there.
+4. Stop the collection loops when the user leaves a place (an `AbortSignal` from the app into `collect` and `loadMoreReviews`); today a stale run only drops its result and keeps scrolling until its limits (review of 10 November).
+5. Speed with hundreds of reviews: the overlay rebuilds the whole list on every progress step and `collect` re-reads every review per scroll step; `collect`, `loadMoreReviews` and `revealReview` repeat the tab, sort and restore steps (could share one helper). Fine for now, revisit if Maps pages feel slow.

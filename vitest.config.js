@@ -3,8 +3,6 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    // The app tests run whole collections with real timers; on a busy machine one takes several seconds.
-    testTimeout: 30000,
     include: ['test/**/*.test.js'],
     coverage: {
       provider: 'v8',

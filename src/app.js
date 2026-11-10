@@ -47,11 +47,9 @@ export function createApp(doc = document, collectOptions = {}) {
   let latest = null;
 
   // Work that is still running (opening a place, "Load more"), so a host or a test can wait until it is done.
-  const pending = new Set();
+  let tail = Promise.resolve();
   function track(promise) {
-    const done = () => pending.delete(promise);
-    pending.add(promise);
-    promise.then(done, done);
+    tail = Promise.allSettled([tail, promise]);
     return promise;
   }
   const onMore = () => track(loadMore());
@@ -149,7 +147,7 @@ export function createApp(doc = document, collectOptions = {}) {
     if (key) track(openPlace(key));
   }
 
-  return { scan, idle: () => Promise.allSettled([...pending]) };
+  return { scan, idle: () => tail };
 }
 
 export function start(doc = document, win = window) {
