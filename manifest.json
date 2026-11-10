@@ -31,15 +31,15 @@
     {
       "resources": ["fonts/*.woff2"],
       "matches": [
-        "https://www.google.com/maps/*",
-        "https://www.google.de/maps/*",
-        "https://www.google.at/maps/*",
-        "https://www.google.ch/maps/*",
-        "https://www.google.co.uk/maps/*",
-        "https://www.google.fr/maps/*",
-        "https://www.google.es/maps/*",
-        "https://www.google.it/maps/*",
-        "https://www.google.nl/maps/*",
+        "https://www.google.com/*",
+        "https://www.google.de/*",
+        "https://www.google.at/*",
+        "https://www.google.ch/*",
+        "https://www.google.co.uk/*",
+        "https://www.google.fr/*",
+        "https://www.google.es/*",
+        "https://www.google.it/*",
+        "https://www.google.nl/*",
         "https://maps.google.com/*"
       ]
     }
