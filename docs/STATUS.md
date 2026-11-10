@@ -1,5 +1,12 @@
 # Status
 
+## Merge with GitHub, Mber Flow token sync, folder loads directly, 10 November 2026
+
+- **Merge:** the eight local commits of 17 October (Load more, spinner, histogram stop, overlay geometry) had never reached GitHub, while PRs #1-#4 (ESLint and Prettier, Spark look, `spark.json`) were merged there. Merged `origin/main` into `main`, keeping the local behaviour; the new overlay parts (Load more, spinner, scrollbar) now use the Mber Flow tokens: ghost button, token colors, Figtree heading.
+- **Tokens:** `npm run tokens` (`tools/tokens.mjs`, the same file as in Shottr and Site Restyler) generates `src/tokens.css` from Mber Flow 1.19.1 with the `--hr-` prefix and copies Figtree and Open Sans into `fonts/`; `npm run tokens:check` is part of `npm run check`. The colors changed with it (Mber Flow's new palette: brown accent in light mode, warm grey panels). The fonts are loaded through `chrome-extension://__MSG_@@extension_id__/fonts/` and are web accessible on the Maps hosts only; the page could already see the extension through its overlay, so this adds no new trace.
+- **Folder:** `manifest.json` and `spark.json` point at `dist/content.js` and `dist/styles.css`, so Chrome loads the repository folder itself after `npm run build`; the build no longer copies the manifest, icons and `spark.json` into `dist/`. The untracked copies of `content.js` and `styles.css` in the root (a workaround of 2 November) are gone.
+- **Tested:** `npm run check` (ESLint, Prettier, tokens check, 118 tests, 100 % coverage), `npm run build`. **Not tested:** loading the folder in Chrome after the change, the fonts and the new colors on a live Maps page, signed-in behaviour (see open work).
+
 ## Scroll to the new reviews, results loaded text, 17 October 2026
 
 After a Load more that brought new reviews the overlay scrolls so that the first new review is at the top (`scrollToReview` in `showOverlay`, set by the app only when the list grew). When no button is offered any more (everything loaded, or a Load more brought nothing) the overlay shows `[loaded]/[all] results loaded`, e.g. `12/12 results loaded` or `10/12 results loaded` (hover text explains that Maps lists no more of them); this replaces the longer "Maps lists only these" note. With only an estimated histogram there is no such line.
@@ -150,3 +157,4 @@ Where things are:
 
 1. Verify in a signed-in Maps session: sorting by lowest rating, the review markup, loading by scrolling, the click to the review and the flash; fix selectors if needed.
 2. Integration into Spark as a built-in tool (Spark 0.4), designed in `docs/SPARK.md`; nothing built in Spark yet.
+3. Spark has no way yet to give the overlay its fonts (the `chrome-extension://` font URLs only work in Chrome); until then it uses the system font there.

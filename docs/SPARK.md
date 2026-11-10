@@ -10,13 +10,13 @@ Honest Ratings goes into Spark (`SasNos/Spark`) as a built-in tool. Spark has no
 
 ## spark.json
 
-`spark.json` describes the tool for Spark in the same format as Group Repos (`SasNos/GroupRepos`): `matches` (the Maps hosts, kept equal to `manifest.json` by a test), `css` and `js` to inject, `runAt`, `start: null` (the script starts itself), `storage: null` (it stores nothing) and `network: []` (no requests of its own). `npm run build` copies it into `dist/`.
+`spark.json` describes the tool for Spark in the same format as Group Repos (`SasNos/GroupRepos`): `matches` (the Maps hosts, kept equal to `manifest.json` by a test), `css` and `js` to inject (`dist/styles.css`, `dist/content.js`, paths relative to the repository root like in `manifest.json`), `runAt`, `start: null` (the script starts itself), `storage: null` (it stores nothing) and `network: []` (no requests of its own).
 
 ## Build and copy
 
-- `npm run build` writes `dist/content.js` (one IIFE, no globals) and `dist/styles.css`.
+- `npm run build` writes `dist/content.js` (one IIFE, no globals) and `dist/styles.css` (the generated tokens of `src/tokens.css`, then the rules of `src/styles.css`).
 - Spark copies both, pinned to a Honest Ratings commit, into its resources (copy, not link, as with Mber Flow). The commit is noted next to the files. In Spark they count as vendored code for the coverage rule; the coverage is enforced here.
-- The style already matches Spark: tokens copied from Mber Flow with an `--hr-` prefix (`src/styles.css`).
+- The style already matches Spark: tokens generated from Mber Flow with an `--hr-` prefix (`npm run tokens`). The `@font-face` rules point at `chrome-extension://__MSG_@@extension_id__/fonts/`, which only Chrome resolves; in Spark the overlay falls back to the system font until Spark serves Figtree and Open Sans to the tool (open).
 
 ## Injection
 

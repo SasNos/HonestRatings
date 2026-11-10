@@ -15,8 +15,8 @@
     "https://www.google.nl/maps/*",
     "https://maps.google.com/*"
   ],
-  "css": ["styles.css"],
-  "js": ["content.js"],
+  "css": ["dist/styles.css"],
+  "js": ["dist/content.js"],
   "start": null,
   "runAt": "document_idle",
   "storage": null,

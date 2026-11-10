@@ -1,5 +1,8 @@
+// Bundles src/ into dist/: dist/content.js (one IIFE, no globals) and dist/styles.css (the generated Mber Flow
+// tokens followed by the rules). manifest.json and spark.json point at these two files; the repository folder itself
+// is the unpacked extension.
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 rmSync('dist', { recursive: true, force: true });
 mkdirSync('dist', { recursive: true });
@@ -10,8 +13,8 @@ await build({
   format: 'iife',
   target: 'chrome110',
 });
-cpSync('src/styles.css', 'dist/styles.css');
-cpSync('manifest.json', 'dist/manifest.json');
-cpSync('spark.json', 'dist/spark.json');
-if (existsSync('icons')) cpSync('icons', 'dist/icons', { recursive: true });
-console.log('Built dist/ - load it in chrome://extensions (developer mode, "Load unpacked").');
+writeFileSync(
+  'dist/styles.css',
+  `${readFileSync('src/tokens.css', 'utf8')}\n${readFileSync('src/styles.css', 'utf8')}`,
+);
+console.log('Built dist/ - load this folder in chrome://extensions (developer mode, "Load unpacked").');

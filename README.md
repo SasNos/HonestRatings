@@ -39,7 +39,7 @@ Honest Ratings is planned as a built-in tool of the browser Spark; see [docs/SPA
 npm install; npm run build
 ```
 
-Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" and select the `dist` folder.
+Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" and select this folder (the repository root; `manifest.json` points into `dist/`). After every change run `npm run build` and press the reload button of the extension.
 
 ## Limits, honestly
 
@@ -55,12 +55,13 @@ Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" a
 npm test              # vitest, jsdom, 100 % line and branch coverage enforced
 npm run lint          # ESLint
 npm run format        # Prettier, rewrites files (format:check only checks)
-npm run check         # lint, format check and tests, as in CI
+npm run tokens        # regenerates src/tokens.css and fonts/ from Mber Flow (tokens:check only checks)
+npm run check         # lint, format check, tokens check and tests, as in CI
 npm run build         # bundles src/ into dist/
 npm run icons         # regenerates icons/
 ```
 
-Code and documentation are English. The look is inherited from Spark, which uses the Mber Flow design system: ember accent, warm sand surfaces, the Mber Flow spacing and type scale on a 4 px grid, light and dark mode. The tokens are copied into `src/styles.css` with an `--hr-` prefix (see Spark `CONCEPT.md` section 5 and Mber Flow `docs/STYLEGUIDE.md`).
+Code and documentation are English. The look is inherited from Spark, which uses the Mber Flow design system: ember accent, warm sand surfaces, the Mber Flow spacing and type scale on a 4 px grid, light and dark mode. Headings use Figtree, text Open Sans (bundled in `fonts/`). The tokens are generated into `src/tokens.css` with an `--hr-` prefix by `npm run tokens` (see Spark `CONCEPT.md` section 5 and Mber Flow `docs/STYLEGUIDE.md`).
 
 ## License
 

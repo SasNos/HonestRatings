@@ -6,7 +6,7 @@ export default defineConfig({
     include: ['test/**/*.test.js'],
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.js'],
+      include: ['src/**/*.js', 'tools/tokens.mjs'],
       thresholds: { lines: 100, branches: 100, functions: 100, statements: 100 },
     },
   },

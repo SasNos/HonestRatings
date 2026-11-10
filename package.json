@@ -7,11 +7,13 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "icons": "node tools/make-icons.mjs",
+    "tokens": "node tools/tokens.mjs",
+    "tokens:check": "node tools/tokens.mjs --check",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run --coverage",
-    "check": "npm run lint && npm run format:check && npm test"
+    "check": "npm run lint && npm run format:check && npm run tokens:check && npm test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
