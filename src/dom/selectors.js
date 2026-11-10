@@ -20,6 +20,7 @@ export const SEL = {
 export const SORT_LOWEST_INDEX = 3;
 
 // Reviews tab label in the languages Google Maps is most used in.
-export const REVIEWS_TAB = /^(review|rezension|bewertung|avis|reseña|opinion|recension|beoordeling|avalia|レビュー|评论)/i;
+export const REVIEWS_TAB =
+  /^(review|rezension|bewertung|avis|reseña|opinion|recension|beoordeling|avalia|レビュー|评论)/i;
 // Sort button label, for when the data-value attribute is missing.
 export const SORT_LABEL = /sort|sortier|trier|ordenar|ordina|sorteer|classific|排序|並び/i;

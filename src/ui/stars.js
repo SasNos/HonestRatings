@@ -13,7 +13,7 @@ function star(filled) {
   return svg;
 }
 
-// Five purple stars, `count` of them filled.
+// Five ember stars, `count` of them filled.
 export function renderStars(count) {
   const wrap = document.createElement('span');
   wrap.className = 'hr-stars';

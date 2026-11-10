@@ -14,7 +14,9 @@ afterEach(() => {
 describe('place overlay', () => {
   const go = (path) => window.history.replaceState({}, '', path);
   const overlayText = () => document.getElementById('hr-overlay').textContent;
-  const histogram = [5, 4, 3, 2, 1].map((s) => `<span role="img" aria-label="${s} stars, ${s === 1 ? 20 : 10 * s} reviews"></span>`).join('');
+  const histogram = [5, 4, 3, 2, 1]
+    .map((s) => `<span role="img" aria-label="${s} stars, ${s === 1 ? 20 : 10 * s} reviews"></span>`)
+    .join('');
 
   function placePage(title) {
     document.body.innerHTML = `<div role="main"><h1>${title}</h1><span role="img" aria-label="4.0 stars 500 Reviews"></span>${histogram}
@@ -23,9 +25,15 @@ describe('place overlay', () => {
     document.querySelectorAll('button[role="tab"]')[1].addEventListener('click', () => {
       area.innerHTML = '<button data-value="Sort"></button>';
       area.querySelector('button').addEventListener('click', () => {
-        area.insertAdjacentHTML('beforeend', '<i role="menuitemradio"></i>'.repeat(3) + '<i role="menuitemradio" id="lowest"></i>');
+        area.insertAdjacentHTML(
+          'beforeend',
+          '<i role="menuitemradio"></i>'.repeat(3) + '<i role="menuitemradio" id="lowest"></i>',
+        );
         document.getElementById('lowest').addEventListener('click', () => {
-          area.insertAdjacentHTML('beforeend', '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>');
+          area.insertAdjacentHTML(
+            'beforeend',
+            '<div data-review-id="r"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Bad</span></div>',
+          );
         });
       });
     });
@@ -113,7 +121,9 @@ describe('place overlay', () => {
     const scrollIntoView = vi.fn();
     window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
     const snapshots = [];
-    const observer = new MutationObserver(() => snapshots.push(document.getElementById('hr-overlay')?.textContent ?? ''));
+    const observer = new MutationObserver(() =>
+      snapshots.push(document.getElementById('hr-overlay')?.textContent ?? ''),
+    );
     observer.observe(document.body, { childList: true, subtree: true });
     createApp(document, FAST).scan();
     await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'));
@@ -141,7 +151,12 @@ describe('place overlay', () => {
         set(value) {
           if (value > 0 && state.loads < 40) {
             state.loads += 1;
-            document.getElementById('area').insertAdjacentHTML('beforeend', `<div data-review-id="m${state.loads}"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">More ${state.loads}</span></div>`);
+            document
+              .getElementById('area')
+              .insertAdjacentHTML(
+                'beforeend',
+                `<div data-review-id="m${state.loads}"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">More ${state.loads}</span></div>`,
+              );
           }
         },
       });
@@ -159,7 +174,9 @@ describe('place overlay', () => {
       await vi.waitFor(() => expect(document.querySelector('.hr-overlay__more')).not.toBeNull(), { timeout: 3000 });
       const before = document.querySelectorAll('.hr-review').length;
       document.querySelector('.hr-overlay__more').click();
-      await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), { timeout: 3000 });
+      await vi.waitFor(() => expect(document.querySelectorAll('.hr-review').length).toBeGreaterThan(before), {
+        timeout: 3000,
+      });
       // 41 loaded now, the histogram knows 40: nothing left to load
       await vi.waitFor(() => expect(overlayText()).not.toContain('Loading the negative reviews'), { timeout: 3000 });
       expect(document.querySelector('.hr-overlay__more')).toBeNull();
@@ -234,7 +251,8 @@ describe('place overlay', () => {
   });
   it('takes the last h1 outside the results list, or the URL name without one', async () => {
     go('/maps/place/Real%20Place+Two/@1,2,3z');
-    document.body.innerHTML = '<div role="main"><div role="feed"><h1>Results</h1></div><h1>Sponsored</h1><h1>Real Place</h1><h1> </h1></div>';
+    document.body.innerHTML =
+      '<div role="main"><div role="feed"><h1>Results</h1></div><h1>Sponsored</h1><h1>Real Place</h1><h1> </h1></div>';
     const app = createApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Real Place');
@@ -256,7 +274,8 @@ describe('start', () => {
   it('opens the overlay for a place right away or after the page changes, and leaves Maps untouched', async () => {
     vi.useFakeTimers();
     window.history.replaceState({}, '', '/maps/search/restaurants');
-    document.body.innerHTML = '<div role="feed"><div role="article"><span role="img" aria-label="4.0 stars 100 Reviews"></span></div></div>';
+    document.body.innerHTML =
+      '<div role="feed"><div role="article"><span role="img" aria-label="4.0 stars 100 Reviews"></span></div></div>';
     const before = document.body.innerHTML;
     start(document, window);
     expect(document.getElementById('hr-overlay')).toBeNull();

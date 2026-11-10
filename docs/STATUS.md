@@ -148,7 +148,5 @@ Where things are:
 
 ## Open work
 
-1. Load `dist/` in Chrome while signed in and verify the sort menu and review scraping; fix selectors if needed.
-2. Remember the chosen "Negative" filter between page loads.
-3. Estimated badges in the list could be replaced by exact values once a place was opened.
-4. Store listing (screenshots, description) if the extension should go to the Chrome Web Store.
+1. Verify in a signed-in Maps session: sorting by lowest rating, the review markup, loading by scrolling, the click to the review and the flash; fix selectors if needed.
+2. Integration into Spark as a built-in tool (Spark 0.4), designed in `docs/SPARK.md`; nothing built in Spark yet.

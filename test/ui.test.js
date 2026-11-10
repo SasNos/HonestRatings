@@ -16,9 +16,16 @@ describe('stars', () => {
 });
 
 describe('overlay', () => {
-  const reviews = [{ author: 'Ann', stars: 1, text: 'Cold food' }, { author: '', stars: 2, text: 'Rude' }];
+  const reviews = [
+    { author: 'Ann', stars: 1, text: 'Cold food' },
+    { author: '', stars: 2, text: 'Rude' },
+  ];
   it('shows the summary and the reviews and can be closed', () => {
-    const panel = showOverlay({ title: 'Cafe', summary: { stars: 2, share: 0.1, bad: 5, total: 50, exact: true, average: 4.25 }, reviews });
+    const panel = showOverlay({
+      title: 'Cafe',
+      summary: { stars: 2, share: 0.1, bad: 5, total: 50, exact: true, average: 4.25 },
+      reviews,
+    });
     expect(panel.textContent).toContain('10% (5 / 50)');
     expect(panel.textContent).toContain('Google rating 4.3');
     expect(panel.querySelectorAll('.hr-review')).toHaveLength(2);
@@ -28,36 +35,77 @@ describe('overlay', () => {
     expect(document.getElementById('hr-overlay')).toBeNull();
   });
   it('handles estimates, missing summaries, empty lists and loading', () => {
-    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.08, bad: 80, total: 1000, exact: false, average: null }, reviews: [] }).textContent).toContain('~8% (~80 / 1,000)');
-    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.025, bad: null, total: null, exact: false, average: 4.5 }, reviews: [] }).textContent).toContain('~2.5%Google rating 4.5');
-    expect(showOverlay({ title: 'A', summary: { stars: 1, share: 0.05, bad: 5, total: 100, exact: true, average: null }, reviews: [] }).textContent).toContain('5% (5 / 100)');
+    expect(
+      showOverlay({
+        title: 'A',
+        summary: { stars: 1, share: 0.08, bad: 80, total: 1000, exact: false, average: null },
+        reviews: [],
+      }).textContent,
+    ).toContain('~8% (~80 / 1,000)');
+    expect(
+      showOverlay({
+        title: 'A',
+        summary: { stars: 1, share: 0.025, bad: null, total: null, exact: false, average: 4.5 },
+        reviews: [],
+      }).textContent,
+    ).toContain('~2.5%Google rating 4.5');
+    expect(
+      showOverlay({
+        title: 'A',
+        summary: { stars: 1, share: 0.05, bad: 5, total: 100, exact: true, average: null },
+        reviews: [],
+      }).textContent,
+    ).toContain('5% (5 / 100)');
     expect(showOverlay({ title: 'A', summary: null, reviews: [] }).textContent).toContain('No negative reviews found.');
     expect(showOverlay({ title: 'A', loading: true }).textContent).toContain('Loading the negative reviews');
   });
   it('shows a summary while loading', () => {
-    const panel = showOverlay({ title: 'A', summary: { stars: 1, share: 0.05, bad: 1, total: 20, exact: true, average: null }, loading: true });
+    const panel = showOverlay({
+      title: 'A',
+      summary: { stars: 1, share: 0.05, bad: 1, total: 20, exact: true, average: null },
+      loading: true,
+    });
     expect(panel.textContent).toContain('5% (1 / 20)');
     expect(panel.textContent).toContain('Loading the negative reviews');
   });
   it('explains what it found when no reviews were read, but not when signed out', () => {
     const debug = { sort: true, options: 4, reviewElements: 0, histogram: { 5: 9, 4: 8, 3: 7, 2: 6, 1: 5 } };
-    expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain('Debug: sort button found, 4 menu items, 0 review elements');
+    expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain(
+      'Debug: sort button found, 4 menu items, 0 review elements',
+    );
     expect(showOverlay({ title: 'A', reviews: [], debug }).textContent).toContain('histogram 5:9 4:8 3:7 2:6 1:5');
-    expect(showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false, histogram: null } }).textContent).toContain('sort button missing, 4 menu items, 0 review elements, histogram not found');
+    expect(
+      showOverlay({ title: 'A', reviews: [], debug: { ...debug, sort: false, histogram: null } }).textContent,
+    ).toContain('sort button missing, 4 menu items, 0 review elements, histogram not found');
     expect(showOverlay({ title: 'A', reviews: [], debug, signedOut: true }).textContent).not.toContain('Debug');
-    expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }], debug }).textContent).not.toContain('Debug');
-    expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }] }).textContent).toContain('1 negative review (1-2 stars), 1 star first');
+    expect(
+      showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }], debug }).textContent,
+    ).not.toContain('Debug');
+    expect(showOverlay({ title: 'A', reviews: [{ author: 'x', stars: 1, text: 't' }] }).textContent).toContain(
+      '1 negative review (1-2 stars), 1 star first',
+    );
   });
   it('asks to sign in when signed out', () => {
     expect(showOverlay({ title: 'A', reviews: [], signedOut: true }).textContent).toContain('Sign in to Google Maps');
   });
   it('says how many of all negative reviews are loaded when the exact histogram is known', () => {
     const exact = { stars: 1, share: 0.02, bad: 1290, total: 100000, exact: true, average: 4.9 };
-    const reviews = [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }, { id: 'b', author: 'Bob', stars: 1, text: '' }];
-    expect(showOverlay({ title: 'A', summary: exact, reviews }).textContent).toContain('2 of 1,290 negative reviews (1-2 stars)');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 2 }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews: [reviews[0]] }).textContent).toContain('1 negative review (1-2 stars)');
-    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).toContain('2 negative reviews (1-2 stars)');
+    const reviews = [
+      { id: 'a', author: 'Ann', stars: 1, text: 'Cold' },
+      { id: 'b', author: 'Bob', stars: 1, text: '' },
+    ];
+    expect(showOverlay({ title: 'A', summary: exact, reviews }).textContent).toContain(
+      '2 of 1,290 negative reviews (1-2 stars)',
+    );
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 2 }, reviews }).textContent).toContain(
+      '2 negative reviews (1-2 stars)',
+    );
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews: [reviews[0]] }).textContent).toContain(
+      '1 negative review (1-2 stars)',
+    );
+    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).toContain(
+      '2 negative reviews (1-2 stars)',
+    );
   });
   it('shows a spinner while loading, in the place of the Load more button, and not otherwise', () => {
     const loading = showOverlay({ title: 'A', reviews: [], loading: true });
@@ -76,27 +124,62 @@ describe('overlay', () => {
     expect(onMore).toHaveBeenCalledTimes(1);
     expect(button.disabled).toBe(true);
     expect(button.textContent).toBe('Loading…');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 12 }, reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })) }).querySelector('.hr-overlay__more').textContent).toBe('Load 2 more');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 544 }, reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })) }).querySelector('.hr-overlay__more').textContent).toBe('Load next 10 of 534');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
-    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).querySelector('.hr-overlay__more')).toBeNull();
-    expect(showOverlay({ title: 'A', summary: exact, reviews, loading: true }).querySelector('.hr-overlay__more')).toBeNull();
-    expect(showOverlay({ title: 'A', summary: exact, reviews, signedOut: true }).querySelector('.hr-overlay__more')).toBeNull();
+    expect(
+      showOverlay({
+        title: 'A',
+        summary: { ...exact, bad: 12 },
+        reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })),
+      }).querySelector('.hr-overlay__more').textContent,
+    ).toBe('Load 2 more');
+    expect(
+      showOverlay({
+        title: 'A',
+        summary: { ...exact, bad: 544 },
+        reviews: Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' })),
+      }).querySelector('.hr-overlay__more').textContent,
+    ).toBe('Load next 10 of 534');
+    expect(
+      showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).querySelector('.hr-overlay__more'),
+    ).toBeNull();
+    expect(
+      showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).querySelector('.hr-overlay__more'),
+    ).toBeNull();
+    expect(
+      showOverlay({ title: 'A', summary: exact, reviews, loading: true }).querySelector('.hr-overlay__more'),
+    ).toBeNull();
+    expect(
+      showOverlay({ title: 'A', summary: exact, reviews, signedOut: true }).querySelector('.hr-overlay__more'),
+    ).toBeNull();
     expect(showOverlay({ title: 'A', reviews }).querySelector('.hr-overlay__more')).toBeNull();
     showOverlay({ title: 'A', summary: exact, reviews }).querySelector('.hr-overlay__more').click();
     const done = showOverlay({ title: 'A', summary: exact, reviews, exhausted: true });
     expect(done.querySelector('.hr-overlay__more')).toBeNull();
     expect(done.textContent).toContain('1/40 results loaded');
     expect(done.querySelector('.hr-overlay__done').title).toContain('Maps lists no more of them');
-    const complete = showOverlay({ title: 'A', summary: { ...exact, bad: 2 }, reviews: [...reviews, { id: 'b', author: 'Bob', stars: 1, text: 'x' }] });
+    const complete = showOverlay({
+      title: 'A',
+      summary: { ...exact, bad: 2 },
+      reviews: [...reviews, { id: 'b', author: 'Bob', stars: 1, text: 'x' }],
+    });
     expect(complete.textContent).toContain('2/2 results loaded');
     expect(complete.querySelector('.hr-overlay__done').title).toBe('');
-    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).textContent).toContain('1/1 results loaded');
-    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).not.toContain('results loaded');
-    expect(showOverlay({ title: 'A', summary: exact, reviews: [], exhausted: true }).textContent).not.toContain('results loaded');
+    expect(showOverlay({ title: 'A', summary: { ...exact, bad: 1 }, reviews }).textContent).toContain(
+      '1/1 results loaded',
+    );
+    expect(showOverlay({ title: 'A', summary: { ...exact, exact: false }, reviews }).textContent).not.toContain(
+      'results loaded',
+    );
+    expect(showOverlay({ title: 'A', summary: exact, reviews: [], exhausted: true }).textContent).not.toContain(
+      'results loaded',
+    );
   });
   it('scrolls the first newly loaded review to the top after Load more', () => {
-    Object.defineProperty(HTMLElement.prototype, 'offsetTop', { configurable: true, get() { return this.classList.contains('hr-review') ? 500 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get() {
+        return this.classList.contains('hr-review') ? 500 : 0;
+      },
+    });
     const reviews = [0, 1, 2].map((i) => ({ id: `r${i}`, author: 'x', stars: 1, text: 't' }));
     expect(showOverlay({ title: 'A', reviews, scrollToReview: 2 }).scrollTop).toBe(492);
     removeOverlay();
@@ -107,7 +190,11 @@ describe('overlay', () => {
   });
   it('opens a review on click, Enter or Space and ignores other keys', () => {
     const onReview = vi.fn();
-    const panel = showOverlay({ title: 'Cafe', reviews: [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }], onReview });
+    const panel = showOverlay({
+      title: 'Cafe',
+      reviews: [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }],
+      onReview,
+    });
     const card = panel.querySelector('.hr-review');
     card.click();
     expect(onReview).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'a' }));
@@ -126,7 +213,11 @@ describe('overlay', () => {
   it('shows reviews that are loaded so far while it still loads, and keeps the scroll position', () => {
     const first = showOverlay({ title: 'Cafe', reviews: [], loading: true });
     first.scrollTop = 40;
-    const again = showOverlay({ title: 'Cafe', reviews: [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }], loading: true });
+    const again = showOverlay({
+      title: 'Cafe',
+      reviews: [{ id: 'a', author: 'Ann', stars: 1, text: 'Cold' }],
+      loading: true,
+    });
     expect(again.textContent).toContain('Loading the negative reviews');
     expect(again.textContent).toContain('1 negative review');
     expect(again.scrollTop).toBe(40);

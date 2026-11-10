@@ -7,12 +7,20 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "icons": "node tools/make-icons.mjs",
-    "test": "vitest run --coverage"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --coverage",
+    "check": "npm run lint && npm run format:check && npm test"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitest/coverage-v8": "^2.1.8",
     "esbuild": "^0.24.2",
+    "eslint": "^9.39.5",
+    "globals": "^15.15.0",
     "jsdom": "^25.0.1",
+    "prettier": "^3.9.10",
     "vitest": "^2.1.8"
   }
 }

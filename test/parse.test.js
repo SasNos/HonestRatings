@@ -33,7 +33,9 @@ describe('parseHistogram', () => {
     expect(parseHistogram(root)).toEqual({ 1: 107, 2: 207, 3: 307, 4: 407, 5: 507 });
   });
   it('never reads its own stars as a histogram', () => {
-    const own = [5, 4, 3, 2, 1].map((s) => `<span class="hr-stars" role="img" aria-label="${s} of 5 negative stars"></span>`).join('');
+    const own = [5, 4, 3, 2, 1]
+      .map((s) => `<span class="hr-stars" role="img" aria-label="${s} of 5 negative stars"></span>`)
+      .join('');
     expect(parseHistogram(html(own))).toBeNull();
   });
   it('accepts equal star and count numbers', () => {
@@ -45,7 +47,18 @@ describe('parseHistogram', () => {
     const full = [5, 4, 3, 2, 1].map((s) => row(`${s} stars, ${s * 10} reviews`)).join('');
     expect(parseHistogram(html(noise + full))[5]).toBe(50);
     expect(parseHistogram(html(noise + row('5 stars, 4 reviews') + row('4 stars, 3 reviews')))).toBeNull();
-    expect(parseHistogram(html(noise + row('5 stars, 4 reviews') + row('3 stars, 3 reviews') + row('3 stars, 3 reviews') + row('2 stars, 1 review') + row('1 star, 1 review')))).toBeNull();
+    expect(
+      parseHistogram(
+        html(
+          noise +
+            row('5 stars, 4 reviews') +
+            row('3 stars, 3 reviews') +
+            row('3 stars, 3 reviews') +
+            row('2 stars, 1 review') +
+            row('1 star, 1 review'),
+        ),
+      ),
+    ).toBeNull();
   });
 });
 
@@ -55,7 +68,12 @@ describe('reviews', () => {
     `<div data-review-id="r${(next += 1)}"><div class="d4r55">${author}</div><span role="img" aria-label="${stars} stars"></span><span class="wiI7pd">${text}</span></div>`;
   it('parses author, stars and text', () => {
     const element = html(review(1, ' Awful ')).firstChild;
-    expect(parseReview(element)).toEqual({ id: expect.stringMatching(/^r\d+$/), author: 'Ann', stars: 1, text: 'Awful' });
+    expect(parseReview(element)).toEqual({
+      id: expect.stringMatching(/^r\d+$/),
+      author: 'Ann',
+      stars: 1,
+      text: 'Awful',
+    });
   });
   it('tolerates missing parts', () => {
     expect(parseReview(html('<div></div>').firstChild)).toEqual({ id: null, author: '', stars: null, text: '' });
@@ -74,20 +92,33 @@ describe('reviews', () => {
     expect(parseReview(mk('0 stars')).stars).toBeNull();
   });
   it('falls back to the longest plain text when the text class is gone', () => {
-    const element = html('<div><button>A very long button label that must not count</button><span>short</span><span>The staff ignored us for an hour.</span><div>Shorter sentence here.</div></div>').firstChild;
+    const element = html(
+      '<div><button>A very long button label that must not count</button><span>short</span><span>The staff ignored us for an hour.</span><div>Shorter sentence here.</div></div>',
+    ).firstChild;
     expect(parseReview(element).text).toBe('The staff ignored us for an hour.');
     expect(parseReview(html('<div><span>short</span></div>').firstChild).text).toBe('');
   });
   it('counts a review once although Maps repeats its id on an inner element and on siblings', () => {
-    const nested = '<div data-review-id="a"><div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div></div>';
-    const sibling = '<div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div>';
-    const other = '<div data-review-id="b"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Bad</span></div>';
+    const nested =
+      '<div data-review-id="a"><div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div></div>';
+    const sibling =
+      '<div data-review-id="a"><span role="img" aria-label="1 star"></span><span class="wiI7pd">Awful</span></div>';
+    const other =
+      '<div data-review-id="b"><span role="img" aria-label="2 stars"></span><span class="wiI7pd">Bad</span></div>';
     const root = html(nested + sibling + other);
     expect(reviewElements(root)).toHaveLength(2);
     expect(negativeReviews(root).map((r) => r.text)).toEqual(['Awful', 'Bad']);
   });
   it('lists every negative review, with or without text, 1 star first, and nothing above 2 stars', () => {
-    const root = html(review(2, 'b') + review(1, '') + review(1, 'a') + review(3, 'c') + review(1, 'd') + review(5, 'e') + '<div data-review-id="y"></div>');
+    const root = html(
+      review(2, 'b') +
+        review(1, '') +
+        review(1, 'a') +
+        review(3, 'c') +
+        review(1, 'd') +
+        review(5, 'e') +
+        '<div data-review-id="y"></div>',
+    );
     expect(negativeReviews(root).map((r) => r.text)).toEqual(['', 'a', 'd', 'b']);
     expect(negativeReviews(root).map((r) => r.stars)).toEqual([1, 1, 1, 2]);
   });

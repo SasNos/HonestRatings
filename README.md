@@ -1,12 +1,12 @@
 # Honest Ratings
 
-Chrome extension for Google Maps that puts the bad reviews first. Bad reviews say more than good ones, so instead of the average stars and the number of all reviews it shows how many reviews are bad and how bad a place is, in **negative stars** (1-5 purple stars, fewer is better).
+Chrome extension for Google Maps that puts the bad reviews first. Bad reviews say more than good ones, so instead of the average stars and the number of all reviews it shows how many reviews are bad and how bad a place is, in **negative stars** (1-5 ember stars, fewer is better).
 
 ## What it does
 
 Maps itself stays untouched: no changed dropdown, no changed result list. The extension only adds one overlay at the top right that appears when you open a place:
 
-- negative stars (1-5 purple stars, fewer is better),
+- negative stars (1-5 ember stars, fewer is better),
 - the share of bad reviews with the count, for example `20% (200 / 1,000)` (a `~` marks an estimate, see below),
 - Google's own rating,
 - **all reviews with 1-2 stars**, with or without text, **1 star first, then 2 stars**, in a scrollable list. They appear while they load (the extension scrolls the review list, at most 30 loads), so the worst are in view at once.
@@ -20,14 +20,18 @@ The overlay ends flush with the right edge of the Maps navigation column (zoom, 
 `bad = reviews with 1 or 2 stars`, `share = bad / all reviews`.
 
 | Share of bad reviews | Negative stars |
-| --- | --- |
-| up to 10 % | 1 |
-| up to 15 % | 2 |
-| up to 22 % | 3 |
-| up to 30 % | 4 |
-| more | 5 |
+| -------------------- | -------------- |
+| up to 10 %           | 1              |
+| up to 15 %           | 2              |
+| up to 22 %           | 3              |
+| up to 30 %           | 4              |
+| more                 | 5              |
 
 A place with a 4.0 average typically lands at 1 star. The overlay uses the exact star histogram of the place panel; when it cannot be read, the numbers are estimated from the average rating (`~`). The thresholds are constants in [src/scoring.js](src/scoring.js).
+
+## In Spark
+
+Honest Ratings is planned as a built-in tool of the browser Spark; see [docs/SPARK.md](docs/SPARK.md).
 
 ## Install (developer mode)
 
@@ -48,12 +52,15 @@ Then open `chrome://extensions`, enable developer mode, choose "Load unpacked" a
 ## Development
 
 ```powershell
-npm test        # vitest, jsdom, 100 % line and branch coverage enforced
-npm run build   # bundles src/ into dist/
-npm run icons   # regenerates icons/
+npm test              # vitest, jsdom, 100 % line and branch coverage enforced
+npm run lint          # ESLint
+npm run format        # Prettier, rewrites files (format:check only checks)
+npm run check         # lint, format check and tests, as in CI
+npm run build         # bundles src/ into dist/
+npm run icons         # regenerates icons/
 ```
 
-Code and documentation are English. The design follows Google's Material look (purple accent, 4 px spacing grid, light and dark mode).
+Code and documentation are English. The look is inherited from Spark, which uses the Mber Flow design system: ember accent, warm sand surfaces, the Mber Flow spacing and type scale on a 4 px grid, light and dark mode. The tokens are copied into `src/styles.css` with an `--hr-` prefix (see Spark `CONCEPT.md` section 5 and Mber Flow `docs/STYLEGUIDE.md`).
 
 ## License
 

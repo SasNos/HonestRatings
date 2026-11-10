@@ -3,7 +3,15 @@ import { badCount, estimateBadShare, negativeStars, summarize, totalCount } from
 
 describe('negativeStars', () => {
   it.each([
-    [0, 1], [0.1, 1], [0.11, 2], [0.15, 2], [0.2, 3], [0.22, 3], [0.3, 4], [0.31, 5], [1, 5],
+    [0, 1],
+    [0.1, 1],
+    [0.11, 2],
+    [0.15, 2],
+    [0.2, 3],
+    [0.22, 3],
+    [0.3, 4],
+    [0.31, 5],
+    [1, 5],
   ])('share %s gives %s stars', (share, stars) => {
     expect(negativeStars(share)).toBe(stars);
   });
@@ -33,11 +41,28 @@ describe('estimateBadShare', () => {
 
 describe('summarize', () => {
   it('is exact with a histogram', () => {
-    expect(summarize({ histogram: { 1: 10, 2: 10, 3: 0, 4: 0, 5: 80 } })).toEqual({ stars: 3, share: 0.2, bad: 20, total: 100, exact: true, average: null });
-    expect(summarize({ histogram: { 1: 1, 2: 0, 3: 0, 4: 0, 5: 99 }, average: 4.8 })).toMatchObject({ stars: 1, average: 4.8 });
+    expect(summarize({ histogram: { 1: 10, 2: 10, 3: 0, 4: 0, 5: 80 } })).toEqual({
+      stars: 3,
+      share: 0.2,
+      bad: 20,
+      total: 100,
+      exact: true,
+      average: null,
+    });
+    expect(summarize({ histogram: { 1: 1, 2: 0, 3: 0, 4: 0, 5: 99 }, average: 4.8 })).toMatchObject({
+      stars: 1,
+      average: 4.8,
+    });
   });
   it('estimates from the average when the histogram is empty or missing', () => {
-    expect(summarize({ histogram: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, average: 4, total: 1000 })).toEqual({ stars: 1, share: 0.08, bad: 80, total: 1000, exact: false, average: 4 });
+    expect(summarize({ histogram: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, average: 4, total: 1000 })).toEqual({
+      stars: 1,
+      share: 0.08,
+      bad: 80,
+      total: 1000,
+      exact: false,
+      average: 4,
+    });
     expect(summarize({ average: 4 })).toMatchObject({ stars: 1, bad: null, total: null, exact: false });
   });
   it('returns null without any data', () => {

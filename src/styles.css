@@ -1,69 +1,248 @@
-/* Material look matched to Google Maps. All spacing is a multiple of 4px. */
+/* Look inherited from Spark, which takes the Mber Flow design system (Spark CONCEPT.md section 5,
+   Mber Flow docs/STYLEGUIDE.md). The tokens below are copied from Mber Flow's theme.css (1.19.1) with an
+   `--hr-` prefix so they cannot clash with the page; rules use only these variables. 4 px grid,
+   2 px only for hairlines, the focus ring and the spinner stroke. */
 :root {
-  --hr-purple: #7b1fa2;
-  --hr-purple-container: #f3e5f5;
-  --hr-surface: #fff;
-  --hr-on-surface: #1f1f1f;
-  --hr-on-surface-variant: #5f6368;
-  --hr-outline: #dadce0;
-  --hr-scrollbar: #5e5e5e;
-  --hr-hover: rgb(60 64 67 / 8%);
-  --hr-shadow: 0 1px 2px rgb(60 64 67 / 30%), 0 2px 6px 2px rgb(60 64 67 / 15%);
-  --hr-font: 'Google Sans', Roboto, Arial, sans-serif;
+  --hr-space-1: 2px;
+  --hr-space-2: 4px;
+  --hr-space-3: 8px;
+  --hr-space-4: 12px;
+  --hr-space-5: 16px;
+  --hr-fs-sm: 12px;
+  --hr-fs-base: 14px;
+  --hr-fs-lg: 15px;
+  --hr-fs-xl: 18px;
+  --hr-h-bar: 32px;
+  --hr-h-btn: 36px;
+  --hr-radius-xs: 4px;
+  --hr-radius-sm: 6px;
+  --hr-radius-ctl: 8px;
+  --hr-radius: 12px;
+  --hr-font-1: 'Figtree', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --hr-font: 'Open Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --hr-ink: #1d2026;
+  --hr-ink-2: #44464d;
+  --hr-panel: #eae2df;
+  --hr-panel-2: #eeebea;
+  --hr-hover: #dcd3cf;
+  --hr-line: #c9c0bb;
+  --hr-panel-border: rgba(201, 192, 187, 0.6);
+  --hr-accent: #7a6254;
+  --hr-accent-strong: #9c4a28;
+  --hr-shadow: 0 1px 2px rgba(61, 67, 79, 0.08), 0 8px 24px rgba(61, 67, 79, 0.12);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --hr-purple: #ce93d8;
-    --hr-purple-container: #3b2a40;
-    --hr-surface: #202124;
-    --hr-on-surface: #e8eaed;
-    --hr-on-surface-variant: #9aa0a6;
-    --hr-outline: #3c4043;
-    --hr-scrollbar: #9aa0a6;
-    --hr-hover: rgb(232 234 237 / 8%);
+    --hr-ink: #eae2df;
+    --hr-ink-2: #cdc7c1;
+    --hr-panel: #31363f;
+    --hr-panel-2: #272c34;
+    --hr-hover: #3d434d;
+    --hr-line: #5a606c;
+    --hr-panel-border: rgba(90, 96, 108, 0.7);
+    --hr-accent: #f0a35e;
+    --hr-accent-strong: #f0a35e;
+    --hr-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
-.hr-stars { display: inline-flex; vertical-align: middle; }
-.hr-star { width: 16px; height: 16px; fill: var(--hr-purple); }
-.hr-star--empty { fill: var(--hr-outline); }
+.hr-stars {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.hr-star {
+  width: 16px;
+  height: 16px;
+  fill: var(--hr-accent);
+}
+.hr-star--empty {
+  fill: var(--hr-line);
+}
 
-.hr-collecting [role="main"] { opacity: 0; pointer-events: none; }
+.hr-collecting [role='main'] {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* Flush with the right edge of the Maps navigation column (zoom, location and street view,
    20px from the right, measured on the live page). It stays below the account and apps row
    (72px) and ends 171px above the bottom: the navigation column starts 155px above it, and the
-   Layers button of narrow windows sits in the same strip. */
+   Layers button of narrow windows sits in the same strip. These offsets and the z-index follow
+   the Maps layout, not the token scale. */
 .hr-overlay {
-  position: fixed; z-index: 1000; top: 72px; right: 20px; bottom: auto; width: min(360px, calc(100vw - 408px - 36px));
-  min-width: 240px; max-height: calc(100vh - 72px - 171px);
-  overflow-y: auto; box-sizing: border-box; padding: 16px; border-radius: 16px;
-  background: var(--hr-surface); color: var(--hr-on-surface); box-shadow: var(--hr-shadow); font: 400 14px/20px var(--hr-font);
+  position: fixed;
+  z-index: 1000;
+  top: 72px;
+  right: 20px;
+  bottom: auto;
+  width: min(360px, calc(100vw - 408px - 36px));
+  min-width: 240px;
+  max-height: calc(100vh - 72px - 171px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--hr-space-5);
+  border: 1px solid var(--hr-panel-border);
+  border-radius: var(--hr-radius);
+  background: var(--hr-panel);
+  color: var(--hr-ink);
+  box-shadow: var(--hr-shadow);
+  font: 400 var(--hr-fs-base) / 1.45 var(--hr-font);
 }
-/* The scrollbar of the Maps panels measured on the live page: 6px, transparent track, 4px round thumb. */
-.hr-overlay::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
-.hr-overlay::-webkit-scrollbar-track { background: transparent; }
-.hr-overlay::-webkit-scrollbar-thumb { background: var(--hr-scrollbar); border-radius: 4px; }
-.hr-overlay__header { display: flex; align-items: center; justify-content: space-between; }
-.hr-overlay__header h2 { margin: 0; font: 500 16px/24px var(--hr-font); color: var(--hr-purple); }
-.hr-overlay__close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--hr-on-surface-variant); font-size: 20px; line-height: 32px; cursor: pointer; }
-.hr-overlay__close:hover { background: var(--hr-hover); }
-.hr-overlay__place { margin: 4px 0 12px; font-weight: 500; }
-.hr-overlay__summary { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.hr-overlay__figure { margin: 0; font-weight: 500; }
-.hr-overlay__note { margin: 0; color: var(--hr-on-surface-variant); }
-.hr-overlay__debug { margin: 8px 0 0; color: var(--hr-on-surface-variant); font-size: 12px; line-height: 16px; }
-.hr-review { margin-top: 8px; padding: 12px; border-radius: 12px; background: var(--hr-purple-container); cursor: pointer; }
-.hr-review:hover, .hr-review:focus-visible { outline: 2px solid var(--hr-purple); outline-offset: -2px; }
-/* Material style circular progress: a ring with a purple arc. */
-.hr-overlay__loading { display: flex; justify-content: center; margin-top: 8px; padding: 8px 0; }
-.hr-spinner { width: 24px; height: 24px; box-sizing: border-box; border: 3px solid var(--hr-outline); border-top-color: var(--hr-purple); border-radius: 50%; animation: hr-spin 0.9s linear infinite; }
-@keyframes hr-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .hr-spinner { animation-duration: 3s; } }
-.hr-overlay__more { display: block; box-sizing: border-box; width: 100%; height: 36px; margin-top: 8px; border: 0; border-radius: 18px; background: none; color: var(--hr-purple); font: 500 14px/20px var(--hr-font); cursor: pointer; }
-.hr-overlay__more:hover:not(:disabled) { background: var(--hr-purple-container); }
-.hr-overlay__more:disabled { color: var(--hr-on-surface-variant); cursor: default; }
-.hr-review__text--empty { color: var(--hr-on-surface-variant); font-style: italic; }
-.hr-flash { outline: 3px solid var(--hr-purple); outline-offset: 4px; border-radius: 12px; transition: outline-color 0.3s; }
-.hr-review__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 500; }
-.hr-review__text { margin: 8px 0 0; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+/* The scrollbar shape of the Maps panels (6px, transparent track, round thumb), in token colors. */
+.hr-overlay::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+.hr-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hr-overlay::-webkit-scrollbar-thumb {
+  background: var(--hr-line);
+  border-radius: var(--hr-radius-xs);
+}
+.hr-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hr-overlay__header h2 {
+  margin: 0;
+  font: 600 var(--hr-fs-lg) / 1.45 var(--hr-font-1);
+  color: var(--hr-accent-strong);
+}
+.hr-overlay__close {
+  width: var(--hr-h-bar);
+  height: var(--hr-h-bar);
+  border: 0;
+  border-radius: var(--hr-radius-ctl);
+  background: none;
+  color: var(--hr-ink-2);
+  font-size: var(--hr-fs-xl);
+  line-height: var(--hr-h-bar);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.hr-overlay__close:hover {
+  background: var(--hr-hover);
+}
+.hr-overlay__close:focus-visible,
+.hr-overlay__more:focus-visible,
+.hr-review:focus-visible {
+  outline: 2px solid var(--hr-accent);
+  outline-offset: -2px;
+}
+.hr-overlay__place {
+  margin: var(--hr-space-2) 0 var(--hr-space-4);
+  font-weight: 600;
+}
+.hr-overlay__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--hr-space-3);
+  margin-bottom: var(--hr-space-4);
+}
+.hr-overlay__figure {
+  margin: 0;
+  font-weight: 600;
+}
+.hr-overlay__note {
+  margin: 0;
+  color: var(--hr-ink-2);
+}
+.hr-overlay__debug {
+  margin: var(--hr-space-3) 0 0;
+  color: var(--hr-ink-2);
+  font-size: var(--hr-fs-sm);
+}
+.hr-review {
+  margin-top: var(--hr-space-3);
+  padding: var(--hr-space-4);
+  border-radius: var(--hr-radius-sm);
+  background: var(--hr-panel-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.hr-review:hover {
+  background: var(--hr-hover);
+}
+.hr-review__text--empty {
+  color: var(--hr-ink-2);
+  font-style: italic;
+}
+/* Where the "Load more" button goes, a spinner shows that reviews are loading. */
+.hr-overlay__loading {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--hr-space-3);
+  padding: var(--hr-space-3) 0;
+}
+.hr-spinner {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid var(--hr-line);
+  border-top-color: var(--hr-accent);
+  border-radius: 50%;
+  animation: hr-spin 0.9s linear infinite;
+}
+@keyframes hr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* A ghost button (Mber Flow `.btn.ghost`) across the whole panel. */
+.hr-overlay__more {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--hr-h-btn);
+  margin-top: var(--hr-space-3);
+  border: 0;
+  border-radius: var(--hr-radius-ctl);
+  background: none;
+  color: var(--hr-accent-strong);
+  font: 600 var(--hr-fs-base) / 1.45 var(--hr-font);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.hr-overlay__more:hover:not(:disabled) {
+  background: var(--hr-hover);
+}
+.hr-overlay__more:disabled {
+  color: var(--hr-ink-2);
+  cursor: default;
+}
+/* Marks the review in the Maps panel after a click in the overlay. */
+.hr-flash {
+  outline: 2px solid var(--hr-accent);
+  outline-offset: var(--hr-space-2);
+  border-radius: var(--hr-radius);
+  transition: outline-color 0.2s;
+}
+.hr-review__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hr-space-3);
+  font-weight: 600;
+}
+.hr-review__text {
+  margin: var(--hr-space-3) 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hr-overlay__close,
+  .hr-overlay__more,
+  .hr-review,
+  .hr-flash {
+    transition: none;
+  }
+  .hr-spinner {
+    animation-duration: 3s;
+  }
+}
