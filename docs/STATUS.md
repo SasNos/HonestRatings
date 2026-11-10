@@ -154,6 +154,8 @@ Where things are:
 - Not loaded as a real extension in Chrome yet (only the bundle was injected into the page), so manifest, `chrome://extensions` loading and the content-script CSS are untested.
 - Only English was checked live; other languages rely on the label patterns and the position-based sort entry.
 
+- The coverage exclusion in `tools/tokens.mjs` (the disk binding at the end: real files, real hash, runs only as a script) is marked with ignore comments; everything else in the file is tested.
+
 ## Open work
 
 1. Verify in a signed-in Maps session: sorting by lowest rating, the review markup, loading by scrolling, the click to the review and the flash; fix selectors if needed.
