@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, start } from '../src/app.js';
 
 const FAST = { timeout: 30, interval: 5, settle: 0, restore: 0 };
+// vi.waitFor waits 1 s by default, too little for a full collection on a busy machine (coverage, parallel files).
+const SLOW = { timeout: 3000 };
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -51,9 +53,9 @@ describe('place overlay', () => {
     const app = createApp(document, FAST);
     app.scan();
     expect(overlayText()).toContain('Loading');
-    await vi.waitFor(() => expect(overlayText()).toContain('25% (40 / 160)'));
+    await vi.waitFor(() => expect(overlayText()).toContain('25% (40 / 160)'), SLOW);
     expect(overlayText()).toContain('Google rating 4.0');
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     expect(hiddenWhileSwitching).toBe(true);
     expect(document.documentElement.classList.contains('hr-collecting')).toBe(false);
   });
@@ -64,7 +66,7 @@ describe('place overlay', () => {
     app.scan();
     document.querySelector('h1').textContent = 'Something else';
     app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     expect(overlayText()).toContain('Cafe');
     go('/maps/search/x');
     app.scan();
@@ -78,7 +80,7 @@ describe('place overlay', () => {
     placePage('Cafe');
     const app = createApp(document, FAST);
     app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     go('/maps/place/Bar/@1,2,3z');
     app.scan(); // the URL is new, the panel still shows Cafe
     expect(overlayText()).toContain('Bar');
@@ -88,7 +90,7 @@ describe('place overlay', () => {
       placePage('Bar');
       document.querySelector('[role="main"] [aria-label^="5 stars"]').setAttribute('aria-label', '5 stars, 70 reviews');
     }, 10);
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     expect(overlayText()).toContain('Bar');
     expect(overlayText()).toContain('Google rating 4.0');
     expect(overlayText()).toContain('22% (40 / 180)');
@@ -98,7 +100,7 @@ describe('place overlay', () => {
     placePage('Cafe');
     const app = createApp(document, FAST);
     app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     go('/maps/search/x');
     app.scan();
     document.querySelector('h1').remove();
@@ -126,11 +128,11 @@ describe('place overlay', () => {
     );
     observer.observe(document.body, { childList: true, subtree: true });
     createApp(document, FAST).scan();
-    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'));
+    await vi.waitFor(() => expect(overlayText()).not.toContain('Loading'), SLOW);
     observer.disconnect();
     expect(snapshots.some((text) => text.includes('Loading the negative reviews') && text.includes('Bad'))).toBe(true);
     document.querySelector('.hr-review').click();
-    await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    await vi.waitFor(() => expect(scrollIntoView).toHaveBeenCalled(), SLOW);
     expect(document.querySelector('[data-review-id="r"]').classList.contains('hr-flash')).toBe(true);
     delete window.HTMLElement.prototype.scrollIntoView;
   });
@@ -236,7 +238,7 @@ describe('place overlay', () => {
     placePage('Something else');
     createApp(document, FAST).scan();
     expect(overlayText()).toContain('Ghost%E0%A4%A');
-    await vi.waitFor(() => expect(overlayText()).toContain('Something else'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Something else'), SLOW);
   });
   it('ignores a stale run when another place opens', async () => {
     go('/maps/place/Cafe/@1,2,3z');
@@ -246,7 +248,7 @@ describe('place overlay', () => {
     go('/maps/place/Bar/@1,2,3z');
     document.querySelector('h1').textContent = 'Bar';
     app.scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('Bad'));
+    await vi.waitFor(() => expect(overlayText()).toContain('Bad'), SLOW);
     expect(overlayText()).toContain('Bar');
   });
   it('takes the last h1 outside the results list, or the URL name without one', async () => {
@@ -260,13 +262,13 @@ describe('place overlay', () => {
     document.body.innerHTML = '<div role="main"></div>';
     app.scan();
     expect(overlayText()).toContain('Other Place Two');
-    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'));
+    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'), SLOW);
   });
   it('works without a main region, a rating or a reviews tab', async () => {
     go('/maps/place/Lonely/@1,2,3z');
     document.body.innerHTML = '<h1>Lonely</h1>';
     createApp(document, FAST).scan();
-    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'));
+    await vi.waitFor(() => expect(overlayText()).toContain('No negative reviews'), SLOW);
   });
 });
 
