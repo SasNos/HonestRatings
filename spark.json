@@ -1,7 +1,7 @@
 {
   "id": "honest-ratings",
   "name": "Honest Ratings",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shows the negative reviews of a Google Maps place at a glance: negative stars, share of bad reviews and every negative review, worst first.",
   "matches": [
     "https://www.google.com/maps/*",
