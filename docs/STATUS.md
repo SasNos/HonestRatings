@@ -1,5 +1,10 @@
 # Status
 
+## 11 November 2026: clean-up
+
+- Reviewed all tests: none duplicate, none empty. Moved the `findReviewsTab` test from the `collect` group into its own `findReviewsTab` group. Deleted the ignored `coverage/` report.
+- Tested: `npm run check` green, coverage still 100 %. No behaviour changed.
+
 ## Merge with GitHub, Mber Flow token sync, folder loads directly, 10 November 2026
 
 - **Merge:** the eight local commits of 17 October (Load more, spinner, histogram stop, overlay geometry) had never reached GitHub, while PRs #1-#4 (ESLint and Prettier, Spark look, `spark.json`) were merged there. Merged `origin/main` into `main`, keeping the local behaviour; the new overlay parts (Load more, spinner, scrollbar) now use the Mber Flow tokens: ghost button, token colors, Figtree heading.

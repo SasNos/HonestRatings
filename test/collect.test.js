@@ -72,6 +72,10 @@ describe('findReviewsTab', () => {
     document.body.innerHTML = '<button role="tab">About</button>';
     expect(findReviewsTab(document)).toBeNull();
   });
+  it('matches only tabs that start with the reviews word', () => {
+    document.body.innerHTML = '<button role="tab" aria-label="Overview of Review Cafe"></button>';
+    expect(findReviewsTab(document)).toBeNull();
+  });
 });
 
 describe('findSort', () => {
@@ -449,10 +453,6 @@ describe('collect', () => {
     const result = await collect(document, FAST);
     expect(clicks).not.toContain('sort');
     expect(result).toMatchObject({ reviews: [], signedOut: true });
-  });
-  it('matches only tabs that start with the reviews word', () => {
-    document.body.innerHTML = '<button role="tab" aria-label="Overview of Review Cafe"></button>';
-    expect(findReviewsTab(document)).toBeNull();
   });
   it('gives up without a reviews tab', async () => {
     panel({ withTabs: false });
