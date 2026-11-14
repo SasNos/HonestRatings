@@ -1,5 +1,11 @@
 # Status
 
+## Purple star icon, version 0.2.1, 14 November 2026
+
+- Toolbar icons (`icons/16.png`, `48.png`, `128.png`) are the purple star (#7b1fa2) again; `tools/make-icons.mjs` was switched back. The stars in the overlay are unchanged (ember).
+- `dist/` is gitignored: after a `git pull` it stays stale until `npm run build` runs, then Reload in chrome://extensions.
+- Tested: `npm run check`, `npm run build`. Not tested: the icon in a live Chrome toolbar.
+
 ## 11 November 2026: clean-up
 
 - Reviewed all tests: none duplicate, none empty. Moved the `findReviewsTab` test from the `collect` group into its own `findReviewsTab` group. Deleted the ignored `coverage/` report.
