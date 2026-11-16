@@ -1,5 +1,16 @@
 # Status
 
+## Purple star icon, version 0.2.1, 14 November 2026
+
+- Toolbar icons (`icons/16.png`, `48.png`, `128.png`) are the purple star (#7b1fa2) again; `tools/make-icons.mjs` was switched back. The stars in the overlay are unchanged (ember).
+- `dist/` is gitignored: after a `git pull` it stays stale until `npm run build` runs, then Reload in chrome://extensions.
+- Tested: `npm run check`, `npm run build`. Not tested: the icon in a live Chrome toolbar.
+
+## 11 November 2026: clean-up
+
+- Reviewed all tests: none duplicate, none empty. Moved the `findReviewsTab` test from the `collect` group into its own `findReviewsTab` group. Deleted the ignored `coverage/` report.
+- Tested: `npm run check` green, coverage still 100 %. No behaviour changed.
+
 ## Merge with GitHub, Mber Flow token sync, folder loads directly, 10 November 2026
 
 - **Merge:** the eight local commits of 17 October (Load more, spinner, histogram stop, overlay geometry) had never reached GitHub, while PRs #1-#4 (ESLint and Prettier, Spark look, `spark.json`) were merged there. Merged `origin/main` into `main`, keeping the local behaviour; the new overlay parts (Load more, spinner, scrollbar) now use the Mber Flow tokens: ghost button, token colors, Figtree heading.
